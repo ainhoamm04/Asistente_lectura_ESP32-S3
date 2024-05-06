@@ -7,14 +7,15 @@
 
 Display screen;
 
-extern lv_font_t my_font_name;
-#define HOME_SYMBOL "\xEF\x80\x95"
-extern lv_font_t book_symbol;
-#define BOOK_SYMBOL "\xEF\x94\x98"
+LV_FONT_DECLARE(home_symbol);
+#define home_symbol "\xEF\x80\x95"
+LV_FONT_DECLARE(book_symbol);
+#define book "\xEF\x94\x98"
 extern lv_font_t camera_symbol;
 #define camera_symbol "\xEF\x80\xB0"
 extern lv_font_t statistics_symbol;
 #define statistics_symbol "\xEF\x88\x80"
+
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 static void style_init(void);
@@ -89,8 +90,8 @@ void tab_function(void)
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
 
     /*Add 4 tabs (the tabs are page (lv_page) and can be scrolled*/
-    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, HOME_SYMBOL);
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, BOOK_SYMBOL);
+    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, home_symbol);
+    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, book);
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, camera_symbol);
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, statistics_symbol);
 
