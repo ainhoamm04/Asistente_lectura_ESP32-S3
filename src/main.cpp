@@ -4,20 +4,13 @@
 #include <TFT_eSPI.h>
 #include "FT6336U.h"
 
-
 Display screen;
 
-extern lv_font_t my_font_name;
-#define HOME_SYMBOL "\xEF\x80\x95"
-
-extern lv_font_t book_symbol;
-#define BOOK_SYMBOL "\xEF\x94\x98"
-
-extern lv_font_t camera_symbol;
-#define CAMERA_SYMBOL "\xEF\x80\xB0"
-
-extern lv_font_t statistics_symbol;
-#define STATISTICS_SYMBOL "\xEF\x88\x80"
+extern lv_font_t my_font_symbols;
+#define MY_HOME_SYMBOL "\xEF\x80\x95"
+#define MY_BOOK_SYMBOL "\xEF\x94\x98"
+#define MY_CAMERA_SYMBOL "\xEF\x80\xB0"
+#define MY_STATISTICS_SYMBOL "\xEF\x88\x80"
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 static void style_init(void);
@@ -92,17 +85,22 @@ void tab_function(void)
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
 
     /*Add 4 tabs (the tabs are page (lv_page) and can be scrolled*/
-    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, HOME_SYMBOL);
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, BOOK_SYMBOL);
-    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, CAMERA_SYMBOL);
-    lv_obj_t * tab4 = lv_tabview_add_tab(tabview, STATISTICS_SYMBOL);
+    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, MY_HOME_SYMBOL);
+    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, MY_BOOK_SYMBOL);
+    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, MY_CAMERA_SYMBOL);
+    lv_obj_t * tab4 = lv_tabview_add_tab(tabview, MY_STATISTICS_SYMBOL);
 
     introduccion(tab1);
 
     lv_obj_t * label;
 
     label = lv_label_create(tab2);
-    lv_label_set_text(label, "Second tab");
+    //lv_label_set_text(label, "Second tab");
+    static lv_style_t symbol_style;
+    lv_style_init(&symbol_style);
+    lv_style_set_text_font(&symbol_style, &my_font_symbols); // Asigna la fuente de FontAwesome
+    lv_obj_add_style(label, &symbol_style, 1);
+    lv_label_set_text(label, MY_BOOK_SYMBOL);
 
     label = lv_label_create(tab3);
     lv_label_set_text(label, "Third tab");
@@ -117,14 +115,12 @@ void tab_function(void)
 
 static void introduccion(lv_obj_t * parent)
 {
-
     //lv_obj_t * panel1 = lv_obj_create(parent);
     //lv_obj_set_size(lv_scr_act(), 240, 320);
     //lv_obj_set_style_bg_color(panel1, lv_color_hex(0x13D4C0), LV_PART_MAIN);
 
     //Initialize the style
     style_init();
-
 
     /*Create a menu object*/
     lv_obj_t * menu = lv_menu_create(parent);
