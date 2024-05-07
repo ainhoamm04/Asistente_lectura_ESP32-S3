@@ -16,9 +16,13 @@ extern lv_font_t my_font_symbols;
 static void style_init(void);
 static lv_color_t darken(const lv_color_filter_dsc_t * dsc, lv_color_t color, lv_opa_t opa);
 
-static void introduccion(lv_obj_t * parent);
+static void tab1_content(lv_obj_t * parent);
 void tab_function(void);
 
+static void btn_event_handler(lv_event_t * e);
+static void back_btn_event_handler(lv_event_t * e);
+void tab3_content(lv_obj_t * parent);
+void create_second_screen_tab3();
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -90,7 +94,8 @@ void tab_function(void)
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, MY_CAMERA_SYMBOL);
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, MY_STATISTICS_SYMBOL);
 
-    introduccion(tab1);
+    tab1_content(tab1);
+    tab3_content(tab3);
 
     lv_obj_t * label;
 
@@ -102,18 +107,15 @@ void tab_function(void)
     lv_obj_add_style(label, &symbol_style, 1);
     lv_label_set_text(label, MY_BOOK_SYMBOL);
 
-    label = lv_label_create(tab3);
-    lv_label_set_text(label, "Third tab");
+    //label = lv_label_create(tab3);
+    //lv_label_set_text(label, "Third tab");
 
     label = lv_label_create(tab4);
     lv_label_set_text(label, "Fourth tab");
-
-    lv_obj_scroll_to_view_recursive(label, LV_ANIM_ON);
-
 }
 
 
-static void introduccion(lv_obj_t * parent)
+static void tab1_content(lv_obj_t * parent)
 {
     //lv_obj_t * panel1 = lv_obj_create(parent);
     //lv_obj_set_size(lv_scr_act(), 240, 320);
@@ -218,4 +220,62 @@ static void introduccion(lv_obj_t * parent)
     lv_menu_set_load_page_event(menu, btn, sub_1_page);
     lv_menu_set_page(menu, main_page);
 }
+
+
+// Función para crear el contenido de la pestaña 3
+void tab3_content(lv_obj_t * parent) {
+    lv_obj_t * label = lv_label_create(parent);
+    lv_label_set_text(label, "Hola, estás en la pestaña 3");
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+
+    lv_obj_t * btn = lv_btn_create(parent);
+    lv_obj_set_size(btn, 150, 40);
+    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_event_cb(btn, btn_event_handler, LV_EVENT_CLICKED, NULL);
+    label = lv_label_create(btn);
+    lv_label_set_text(label, "Cambiar pantalla");
+    lv_obj_center(label);
+
+}
+
+// Función para crear la pantalla secundaria de la pestaña 3
+void create_second_screen_tab3() {
+    lv_obj_t * pink_screen = lv_obj_create(NULL);
+    lv_obj_set_size(pink_screen, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(pink_screen, lv_color_hex(0xFFC0CB), 0); // Color rosa
+    lv_scr_load(pink_screen);
+
+    lv_obj_t * label = lv_label_create(pink_screen);
+    lv_label_set_text(label, "Hola, has cambiado de pantalla");
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+
+    lv_obj_t * back_btn = lv_btn_create(pink_screen);
+    lv_obj_set_size(back_btn, 80, 40);
+    lv_obj_align(back_btn, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_event_cb(back_btn, back_btn_event_handler, LV_EVENT_CLICKED, NULL);
+    label = lv_label_create(back_btn);
+    lv_label_set_text(label, "Volver");
+    lv_obj_center(label);
+
+}
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab3
+static void btn_event_handler(lv_event_t * e) {
+    create_second_screen_tab3();
+}
+
+// Manejador de eventos para el botón de volver en la pantalla secundaria de tab3
+static void back_btn_event_handler(lv_event_t * e) {
+    lv_obj_t * current_screen = lv_obj_get_parent(lv_event_get_target(e)); // Obtén la pantalla actual (secundaria)
+    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
+
+    // Carga la pantalla principal con una animación (puedes elegir el tipo de animación que prefieras)
+    //lv_scr_load_anim(main_screen, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+    lv_scr_load(main_screen);
+
+    // Después de la animación, elimina la pantalla rosa
+    lv_obj_del(current_screen);
+}
+
+
 
