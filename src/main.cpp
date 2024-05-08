@@ -19,6 +19,9 @@ static void back_btn_event_handler(lv_event_t * e);
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3();
 
+int reto_pag_mes = 300;
+static void tab4_content(lv_obj_t * parent);
+
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
@@ -91,6 +94,7 @@ void tab_function(void)
 
     tab1_content(tab1);
     tab3_content(tab3);
+    tab4_content(tab4);
 
     lv_obj_t * label;
 
@@ -276,6 +280,113 @@ static void back_btn_event_handler(lv_event_t * e) {
 
     // Después de la animación, elimina la pantalla rosa
     lv_obj_del(current_screen);
+}
+
+
+
+
+
+static void draw_event_cb(lv_event_t * e)
+{
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+    if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
+
+    if(dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
+        const char * month[] = {"Jan", "Febr", "March", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
+        lv_snprintf(dsc->text, dsc->text_length, "%s", month[dsc->value]);
+    }
+}
+
+
+static void tab4_content(lv_obj_t * parent){
+    lv_obj_t * chart = lv_chart_create(parent);
+    lv_obj_set_size(chart, 150, 200);
+    lv_obj_center(chart);
+    lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 500);
+    lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 200);
+    lv_chart_set_point_count(chart, 12);
+    lv_obj_add_event_cb(chart, draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
+
+    /*Add ticks and label to every axis*/
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 10, 5, 12, 3, true, 40);
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 50);
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 10, 5, 3, 4, true, 50);
+    lv_chart_set_div_line_count(chart, 5, 5);
+
+    /*Zoom in a little in X*/
+    lv_chart_set_zoom_x(chart, 1500);
+
+    /*Add two data series*/
+    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_palette_lighten(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_darken(LV_PALETTE_GREEN, 2),
+                                                   LV_CHART_AXIS_SECONDARY_Y);
+
+    /*Set the next points on 'ser1'*/
+    /*
+    lv_chart_set_next_value(chart, ser1, 100);
+    lv_chart_set_next_value(chart, ser1, 110);
+    lv_chart_set_next_value(chart, ser1, 137);
+    lv_chart_set_next_value(chart, ser1, 200);
+    lv_chart_set_next_value(chart, ser1, 256);
+    lv_chart_set_next_value(chart, ser1, 257);
+    lv_chart_set_next_value(chart, ser1, 300);
+    lv_chart_set_next_value(chart, ser1, 302);
+    lv_chart_set_next_value(chart, ser1, 375);
+    lv_chart_set_next_value(chart, ser1, 403);
+    lv_chart_set_next_value(chart, ser1, 463);
+    lv_chart_set_next_value(chart, ser1, 497);
+    */
+
+    lv_coord_t * ser1_array = lv_chart_get_y_array(chart, ser1);
+    //Directly set points on 'ser2'
+    ser1_array[0] = 100;
+    ser1_array[1] = 110;
+    ser1_array[2] = 137;
+    ser1_array[3] = 200;
+    ser1_array[4] = 256;
+    ser1_array[5] = 257;
+    ser1_array[6] = 50;
+    ser1_array[7] = 20;
+    ser1_array[8] = 37;
+    ser1_array[9] = 67;
+    ser1_array[10] = 49;
+    ser1_array[11] = 55;
+
+
+    /*
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 3);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 5);*/
+
+
+    lv_coord_t * ser2_array = lv_chart_get_y_array(chart, ser2);
+    //Directly set points on 'ser2'
+    ser2_array[0] = reto_pag_mes-ser1_array[0];
+    ser2_array[1] = reto_pag_mes-ser1_array[1];
+    ser2_array[2] = reto_pag_mes-ser1_array[2];
+    ser2_array[3] = reto_pag_mes-ser1_array[3];
+    ser2_array[4] = reto_pag_mes-ser1_array[4];
+    ser2_array[5] = reto_pag_mes-ser1_array[5];
+    ser2_array[6] = reto_pag_mes-ser1_array[6];
+    ser2_array[7] = reto_pag_mes-ser1_array[7];
+    ser2_array[8] = reto_pag_mes-ser1_array[8];
+    ser2_array[9] = reto_pag_mes-ser1_array[9];
+    ser2_array[10] = reto_pag_mes-ser1_array[10];
+    ser2_array[11] = reto_pag_mes-ser1_array[11];
+
+
+    lv_chart_refresh(chart); /*Required after direct set*/
+
 }
 
 
