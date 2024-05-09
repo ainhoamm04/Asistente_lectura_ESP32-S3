@@ -286,14 +286,17 @@ static void back_btn_event_handler(lv_event_t * e) {
 
 
 
-static void draw_event_cb(lv_event_t * e)
-{
+
+
+
+
+static void draw_event_cb(lv_event_t * e) {
     lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
     if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
 
     if(dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
-        const char * month[] = {"Jan", "Febr", "March", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
-        lv_snprintf(dsc->text, dsc->text_length, "%s", month[dsc->value]);
+        const char * month[] = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"};
+        lv_snprintf(dsc->text, dsc->text_length, "%s", month[dsc->value % 12]);
     }
 }
 
@@ -322,21 +325,22 @@ static void tab4_content(lv_obj_t * parent){
     lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_darken(LV_PALETTE_GREEN, 2),
                                                    LV_CHART_AXIS_SECONDARY_Y);
 
-    /*Set the next points on 'ser1'*/
     /*
+    //Set the next points on 'ser1'
     lv_chart_set_next_value(chart, ser1, 100);
     lv_chart_set_next_value(chart, ser1, 110);
     lv_chart_set_next_value(chart, ser1, 137);
     lv_chart_set_next_value(chart, ser1, 200);
     lv_chart_set_next_value(chart, ser1, 256);
     lv_chart_set_next_value(chart, ser1, 257);
-    lv_chart_set_next_value(chart, ser1, 300);
-    lv_chart_set_next_value(chart, ser1, 302);
-    lv_chart_set_next_value(chart, ser1, 375);
-    lv_chart_set_next_value(chart, ser1, 403);
-    lv_chart_set_next_value(chart, ser1, 463);
-    lv_chart_set_next_value(chart, ser1, 497);
-    */
+    lv_chart_set_next_value(chart, ser1, 50);
+    lv_chart_set_next_value(chart, ser1, 20);
+    lv_chart_set_next_value(chart, ser1, 37);
+    lv_chart_set_next_value(chart, ser1, 67);
+    lv_chart_set_next_value(chart, ser1, 49);
+    lv_chart_set_next_value(chart, ser1, 55);*/
+
+
 
     lv_coord_t * ser1_array = lv_chart_get_y_array(chart, ser1);
     //Directly set points on 'ser2'
@@ -384,10 +388,9 @@ static void tab4_content(lv_obj_t * parent){
     ser2_array[10] = reto_pag_mes-ser1_array[10];
     ser2_array[11] = reto_pag_mes-ser1_array[11];
 
+    lv_obj_set_style_pad_column(chart, 0, LV_PART_ITEMS);   /*Space between columns of the same index*/
+    lv_obj_set_style_pad_column(chart, 4, LV_PART_MAIN);    /*Space between columns of the adjacent index*/
 
     lv_chart_refresh(chart); /*Required after direct set*/
 
 }
-
-
-
