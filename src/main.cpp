@@ -290,68 +290,6 @@ static void back_btn_event_handler(lv_event_t * e) {
 
 
 
-
-
-static void event_cb(lv_event_t * e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * chart = lv_event_get_target(e);
-
-    if(code == LV_EVENT_VALUE_CHANGED) {
-        lv_obj_invalidate(chart);
-    }
-    if(code == LV_EVENT_REFR_EXT_DRAW_SIZE) {
-        // Realiza el cast explícito aquí
-        lv_coord_t * s = (lv_coord_t *)lv_event_get_param(e);
-        *s = LV_MAX(*s, 20);
-    }
-    else if(code == LV_EVENT_DRAW_POST_END) {
-        int32_t id = lv_chart_get_pressed_point(chart);
-        if(id == LV_CHART_POINT_NONE) return;
-
-        LV_LOG_USER("Selected point %d", (int)id);
-
-        lv_chart_series_t * ser = lv_chart_get_series_next(chart, NULL);
-        while(ser) {
-            lv_point_t p;
-            lv_chart_get_point_pos_by_id(chart, ser, id, &p);
-
-            lv_coord_t * y_array = lv_chart_get_y_array(chart, ser);
-            lv_coord_t value = y_array[id];
-
-            char buf[16];
-            lv_snprintf(buf, sizeof(buf), "%d", value); // Corrección aquí
-
-            lv_draw_rect_dsc_t draw_rect_dsc;
-            lv_draw_rect_dsc_init(&draw_rect_dsc);
-            draw_rect_dsc.bg_color = lv_color_black();
-            draw_rect_dsc.bg_opa = LV_OPA_50;
-            draw_rect_dsc.radius = 3;
-
-            lv_area_t a;
-            a.x1 = chart->coords.x1 + p.x - 20;
-            a.x2 = chart->coords.x1 + p.x + 20;
-            a.y1 = chart->coords.y1 + p.y - 30;
-            a.y2 = chart->coords.y1 + p.y - 10;
-
-            lv_draw_ctx_t * draw_ctx = lv_event_get_draw_ctx(e);
-            lv_draw_rect(draw_ctx, &draw_rect_dsc, &a);
-
-            lv_draw_label_dsc_t label_dsc;
-            lv_draw_label_dsc_init(&label_dsc);
-            label_dsc.font = lv_font_default();
-            label_dsc.color = lv_color_white();
-
-            //lv_draw_label(&a, draw_ctx, &label_dsc, buf, lv_label_dsc_init(&label_dsc), NULL);
-
-            ser = lv_chart_get_series_next(chart, ser);
-        }
-    }
-    else if(code == LV_EVENT_RELEASED) {
-        lv_obj_invalidate(chart);
-    }
-}
-
 static void draw_event_cb(lv_event_t * e) {
     lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
     if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
@@ -362,33 +300,97 @@ static void draw_event_cb(lv_event_t * e) {
     }
 }
 
+
 static void tab4_content(lv_obj_t * parent){
-    /*Create a chart*/
     lv_obj_t * chart = lv_chart_create(parent);
-    lv_obj_set_size(chart, 170, 190);
+    lv_obj_set_size(chart, 150, 200);
     lv_obj_center(chart);
-
+    lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 500);
+    lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 200);
     lv_chart_set_point_count(chart, 12);
+    lv_obj_add_event_cb(chart, draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
 
+    /*Add ticks and label to every axis*/
     lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 10, 5, 12, 3, true, 40);
-    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 30);
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 50);
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 10, 5, 3, 4, true, 50);
     lv_chart_set_div_line_count(chart, 5, 5);
 
-    lv_obj_add_event_cb(chart, event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(chart, draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
-    lv_obj_refresh_ext_draw_size(chart);
-
     /*Zoom in a little in X*/
-    lv_chart_set_zoom_x(chart, 1000);
+    lv_chart_set_zoom_x(chart, 1500);
 
     /*Add two data series*/
-    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
-    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_GREEN), LV_CHART_AXIS_PRIMARY_Y);
-    uint32_t i;
-    for(i = 0; i < 12; i++) {
-        lv_chart_set_next_value(chart, ser1, lv_rand(60, 90));
-        lv_chart_set_next_value(chart, ser2, lv_rand(10, 40));
-    }
+    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_palette_lighten(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_darken(LV_PALETTE_GREEN, 2),
+                                                   LV_CHART_AXIS_SECONDARY_Y);
+
+    /*
+    //Set the next points on 'ser1'
+    lv_chart_set_next_value(chart, ser1, 100);
+    lv_chart_set_next_value(chart, ser1, 110);
+    lv_chart_set_next_value(chart, ser1, 137);
+    lv_chart_set_next_value(chart, ser1, 200);
+    lv_chart_set_next_value(chart, ser1, 256);
+    lv_chart_set_next_value(chart, ser1, 257);
+    lv_chart_set_next_value(chart, ser1, 50);
+    lv_chart_set_next_value(chart, ser1, 20);
+    lv_chart_set_next_value(chart, ser1, 37);
+    lv_chart_set_next_value(chart, ser1, 67);
+    lv_chart_set_next_value(chart, ser1, 49);
+    lv_chart_set_next_value(chart, ser1, 55);*/
+
+
+
+    lv_coord_t * ser1_array = lv_chart_get_y_array(chart, ser1);
+    //Directly set points on 'ser2'
+    ser1_array[0] = 100;
+    ser1_array[1] = 110;
+    ser1_array[2] = 137;
+    ser1_array[3] = 200;
+    ser1_array[4] = 256;
+    ser1_array[5] = 257;
+    ser1_array[6] = 50;
+    ser1_array[7] = 20;
+    ser1_array[8] = 37;
+    ser1_array[9] = 67;
+    ser1_array[10] = 49;
+    ser1_array[11] = 55;
+
+
+    /*
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 1);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 2);
+    lv_chart_set_next_value(chart, ser2, 3);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 4);
+    lv_chart_set_next_value(chart, ser2, 5);*/
+
+
+    lv_coord_t * ser2_array = lv_chart_get_y_array(chart, ser2);
+    //Directly set points on 'ser2'
+    ser2_array[0] = reto_pag_mes-ser1_array[0];
+    ser2_array[1] = reto_pag_mes-ser1_array[1];
+    ser2_array[2] = reto_pag_mes-ser1_array[2];
+    ser2_array[3] = reto_pag_mes-ser1_array[3];
+    ser2_array[4] = reto_pag_mes-ser1_array[4];
+    ser2_array[5] = reto_pag_mes-ser1_array[5];
+    ser2_array[6] = reto_pag_mes-ser1_array[6];
+    ser2_array[7] = reto_pag_mes-ser1_array[7];
+    ser2_array[8] = reto_pag_mes-ser1_array[8];
+    ser2_array[9] = reto_pag_mes-ser1_array[9];
+    ser2_array[10] = reto_pag_mes-ser1_array[10];
+    ser2_array[11] = reto_pag_mes-ser1_array[11];
+
+    lv_obj_set_style_pad_column(chart, 0, LV_PART_ITEMS);   /*Space between columns of the same index*/
+    lv_obj_set_style_pad_column(chart, 4, LV_PART_MAIN);    /*Space between columns of the adjacent index*/
+
+    lv_chart_refresh(chart); /*Required after direct set*/
 
 }
