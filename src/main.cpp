@@ -17,13 +17,14 @@ void tab_function(void);
 
 static void tab2_content(lv_obj_t * parent);
 
-static void btn_event_handler(lv_event_t * e);
-static void back_btn_event_handler(lv_event_t * e);
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3();
+static void btn_event_handler(lv_event_t * e);
+static void back_btn_event_handler(lv_event_t * e);
 
-int reto_pag_mes = 300;
 static void tab4_content(lv_obj_t * parent);
+int reto_pag_mes = 300;
+
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -90,32 +91,15 @@ void tab_function(void)
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
 
     /*Add 4 tabs (the tabs are page (lv_page) and can be scrolled*/
-    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "H");
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "B");
-    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB1");
-    lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "S");
+    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "\xF3\xB0\x8B\x9C");
+    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "\xEE\xB7\xA2");
+    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
+    lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "\xF3\xB0\x84\xA8");
 
     tab1_content(tab1);
     tab2_content(tab2);
     tab3_content(tab3);
     tab4_content(tab4);
-
-    lv_obj_t * label;
-
-    /*
-    label = lv_label_create(tab2);
-    //lv_label_set_text(label, "Second tab");
-    static lv_style_t symbol_style;
-    lv_style_init(&symbol_style);
-    lv_style_set_text_font(&symbol_style, &my_font_symbols); // Asigna la fuente de FontAwesome
-    lv_obj_add_style(label, &symbol_style, 1);
-    lv_label_set_text(label, MY_BOOK_SYMBOL);*/
-
-    //label = lv_label_create(tab3);
-    //lv_label_set_text(label, "Third tab");
-
-    label = lv_label_create(tab4);
-    lv_label_set_text(label, "Fourth tab");
 }
 
 
@@ -228,21 +212,23 @@ static void tab1_content(lv_obj_t * parent)
 
 
 void tab2_content(lv_obj_t * parent) {
-    lv_obj_t * label = lv_label_create(parent);
-    lv_label_set_text(label, "Hola, estás en la pestaña 2");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+    // Crear una etiqueta con la primera fuente
+    lv_obj_t *label = lv_label_create(parent);
+    lv_label_set_text(label, "Texto con estilo de fuente 1\n\n\n");
+    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 80);
 
-    img_btn_book imagen_libro1;
-    imagen_libro1.img_btn_book1(parent);
+    // Crear una etiqueta con la segunda fuente
+    lv_obj_t *label2 = lv_label_create(parent);
+    lv_label_set_text(label2, "Texto con estilo de fuente 2");
+    lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0); // Asignar la segunda fuente
+    lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 140);
 
-    lv_obj_t * btn = lv_btn_create(parent);
-    lv_obj_set_size(btn, 150, 40);
-    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_add_event_cb(btn, btn_event_handler, LV_EVENT_CLICKED, NULL);
-    label = lv_label_create(btn);
-    lv_label_set_text(label, "Cambiar pantalla");
-    lv_obj_center(label);
-
+    // Crear una etiqueta con la tercera fuente
+    lv_obj_t *label3 = lv_label_create(parent);
+    lv_label_set_text(label3, "Texto con estilo de fuente 3");
+    lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0); // Asignar la segunda fuente
+    lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 170);
 }
 
 
