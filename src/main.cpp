@@ -3,6 +3,7 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include "FT6336U.h"
+#include "img_btn_book.h"
 
 Display screen;
 
@@ -13,6 +14,8 @@ static lv_color_t darken(const lv_color_filter_dsc_t * dsc, lv_color_t color, lv
 
 static void tab1_content(lv_obj_t * parent);
 void tab_function(void);
+
+static void tab2_content(lv_obj_t * parent);
 
 static void btn_event_handler(lv_event_t * e);
 static void back_btn_event_handler(lv_event_t * e);
@@ -93,6 +96,7 @@ void tab_function(void)
     lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "S");
 
     tab1_content(tab1);
+    tab2_content(tab2);
     tab3_content(tab3);
     tab4_content(tab4);
 
@@ -220,6 +224,27 @@ static void tab1_content(lv_obj_t * parent)
     lv_menu_set_load_page_event(menu, btn, sub_1_page);
     lv_menu_set_page(menu, main_page);
 }
+
+
+
+void tab2_content(lv_obj_t * parent) {
+    lv_obj_t * label = lv_label_create(parent);
+    lv_label_set_text(label, "Hola, estás en la pestaña 2");
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+
+    img_btn_book imagen_libro1;
+    imagen_libro1.img_btn_book1(parent);
+
+    lv_obj_t * btn = lv_btn_create(parent);
+    lv_obj_set_size(btn, 150, 40);
+    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_event_cb(btn, btn_event_handler, LV_EVENT_CLICKED, NULL);
+    label = lv_label_create(btn);
+    lv_label_set_text(label, "Cambiar pantalla");
+    lv_obj_center(label);
+
+}
+
 
 
 // Función para crear el contenido de la pestaña 3
@@ -387,6 +412,12 @@ static void tab4_content(lv_obj_t * parent){
     ser2_array[9] = reto_pag_mes-ser1_array[9];
     ser2_array[10] = reto_pag_mes-ser1_array[10];
     ser2_array[11] = reto_pag_mes-ser1_array[11];
+
+    int i;
+    for(i = 0; i < 12; i++) {
+        lv_chart_set_next_value(chart, ser1, lv_rand(60, 90));
+        lv_chart_set_next_value(chart, ser2, lv_rand(10, 40));
+    }
 
     lv_obj_set_style_pad_column(chart, 0, LV_PART_ITEMS);   /*Space between columns of the same index*/
     lv_obj_set_style_pad_column(chart, 4, LV_PART_MAIN);    /*Space between columns of the adjacent index*/
