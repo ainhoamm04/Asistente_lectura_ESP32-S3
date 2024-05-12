@@ -7,45 +7,44 @@
 
 Display screen;
 
-
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 lv_obj_t *scr_principal;
 
-//static lv_style_t style_title;
-//static lv_style_t style_btn_pressed;
-//static lv_style_t style_btn;
-
-static lv_style_t style_btn_purple;
-static lv_style_t style_btn_blue;
-static lv_style_t style_btn_orange;
-//static lv_style_t style_btn_pressed;
-
 void tab_function(void);
 static void back_to_main_menu(lv_event_t * e);
-void general_title(lv_obj_t * parent, const char * titulo, lv_color_t color_borde, lv_color_t color_texto);
-void create_button(lv_obj_t * parent, const char * text, lv_color_t bg_color, lv_color_t border_color);
-void button_event_cb(lv_event_t * e);
+
+// Enumeración para los diferentes estilos de títulos
+typedef enum {
+    TITLE_STYLE_PURPLE,
+    TITLE_STYLE_BLUE,
+    TITLE_STYLE_ORANGE,
+    TITLE_STYLE_GREEN
+} title_style_t;
+void general_title(lv_obj_t * parent, const char * titulo, title_style_t style);
+
+// Enumeración para los diferentes estilos de botones
+typedef enum {
+    BUTTON_STYLE_PURPLE,
+    BUTTON_STYLE_BLUE,
+    BUTTON_STYLE_ORANGE,
+    BUTTON_STYLE_GREEN
+} button_style_t;
+void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv_event_cb_t event_cb, lv_coord_t pos_x, lv_coord_t pos_y);
 
 static void tab1_content(lv_obj_t * parent);
-void purple_title(lv_obj_t * parent, const char * titulo);
-static void style_purple_btn(void);
 void create_second_screen_tab1(lv_obj_t *padre);
 static void go_to_screen2_tab1(lv_event_t * e);
 
 static void tab2_content(lv_obj_t * parent);
-void blue_title(lv_obj_t * parent, const char * titulo);
-static void style_blue_btn(void);
-void create_second_screen_tab2();
+void create_second_screen_tab2(lv_obj_t *padre);
 static void go_to_screen2_tab2(lv_event_t * e);
 
 void tab3_content(lv_obj_t * parent);
-void orange_title(lv_obj_t * parent, const char * titulo);
-static void style_orange_btn(void);
-void create_second_screen_tab3();
+void create_second_screen_tab3(lv_obj_t *padre);
 static void go_to_screen2_tab3(lv_event_t * e);
 
 static void tab4_content(lv_obj_t * parent);
-void green_title(lv_obj_t * parent, const char * titulo);
+static void draw_event_cb(lv_event_t * e);
 int reto_pag_mes = 300;
 
 
@@ -67,10 +66,10 @@ void loop() {
 //-------------------------DEFINICIÓN DE FUNCIONES------------------------------------
 void tab_function(void)
 {
-    /*Create a Tab view object*/
+    //Create a Tab view object
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
 
-    /*Add 4 tabs (the tabs are page (lv_page) and can be scrolled*/
+    //Add 4 tabs (the tabs are page (lv_page) and can be scrolled
     lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "\xF3\xB0\x8B\x9C");
     lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "\xF3\xB1\x89\x9F");
     lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
@@ -119,15 +118,6 @@ static void back_to_main_menu(lv_event_t * e) {
 }
 
 
-
-// Enumeración para los diferentes estilos de títulos
-typedef enum {
-    TITLE_STYLE_PURPLE,
-    TITLE_STYLE_BLUE,
-    TITLE_STYLE_ORANGE,
-    TITLE_STYLE_GREEN
-} title_style_t;
-
 // Función para crear un título con estilo de color específico
 void general_title(lv_obj_t * parent, const char * titulo, title_style_t style) {
     static lv_style_t style_title; // Estilo para el título
@@ -175,7 +165,6 @@ void general_title(lv_obj_t * parent, const char * titulo, title_style_t style) 
     lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 5);
 
-
     // Configura el estilo del título basado en el estilo seleccionado
     switch (style) {
         case TITLE_STYLE_PURPLE:
@@ -195,17 +184,6 @@ void general_title(lv_obj_t * parent, const char * titulo, title_style_t style) 
     lv_obj_add_style(label, &style_title, 0); // Aplica el nuevo estilo
 }
 
-
-
-
-
-// Enumeración para los diferentes estilos de botones
-typedef enum {
-    BUTTON_STYLE_PURPLE,
-    BUTTON_STYLE_BLUE,
-    BUTTON_STYLE_ORANGE,
-    BUTTON_STYLE_GREEN
-} button_style_t;
 
 // Función para crear un botón con estilo de color específico
 void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv_event_cb_t event_cb, lv_coord_t pos_x, lv_coord_t pos_y) {
@@ -289,130 +267,25 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
 //--------------------------------------PESTAÑA 1---------------------------------------------------
 static void tab1_content(lv_obj_t * parent)
 {
-    //purple_title(parent, "¡BIENVENIDO!");
-    //general_title(parent, "¡BIENVENIDO!", lv_palette_main(LV_PALETTE_DEEP_PURPLE), lv_palette_main(LV_PALETTE_DEEP_PURPLE));
     general_title(parent, "¡BIENVENIDO!", TITLE_STYLE_PURPLE);
 
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\xB3\xBD");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_color_hex(0xC446FF), lv_color_hex(0x620090), go_to_screen2_tab1, 75, 180);
     create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 180);
 
     lv_obj_t * label = lv_label_create(parent);
     lv_label_set_text(label, "Yo seré tu asistente\n" "\t\t\t\t de lectura :)" "\n\n¿Quieres saber cómo \n\t\t\t\t\t\tfunciono?\n");
     lv_obj_set_style_text_color(label, lv_color_hex(0x000000), LV_PART_MAIN);
     lv_obj_set_pos(label, 28, 60);
-
-    //style_purple_btn();
-
-    /*
-    lv_obj_t * btn = lv_btn_create(parent);
-    lv_obj_t * labelbtn = lv_label_create(btn);
-
-    lv_obj_remove_style_all(btn);
-
-    lv_obj_set_pos(btn, 75, 180);
-    lv_obj_set_size(btn, 50, 50);
-    lv_obj_add_style(btn, &style_btn_purple, 0);
-    //lv_obj_add_style(btn, &style_btn_pressed, LV_STATE_PRESSED);
-    lv_label_set_text(labelbtn, "\xF3\xB0\xB3\xBD");
-    lv_obj_set_style_text_font(labelbtn, &bigger_symbols, 0);
-    lv_obj_center(labelbtn);
-
-    lv_obj_add_event_cb(btn, go_to_screen2_tab1, LV_EVENT_CLICKED, NULL);
-     */
 }
-
-/*
-void purple_title(lv_obj_t * parent, const char * titulo) {
-    static lv_style_t style_title;
-
-    lv_obj_t * label = lv_label_create(parent); // Crea una etiqueta en la pantalla activa
-
-    lv_label_set_text(label, titulo); // Establece el texto de la etiqueta
-
-    lv_style_set_radius(&style_title, 5);
-    lv_style_set_bg_opa(&style_title, LV_OPA_COVER);
-    //lv_style_set_bg_color(&style_title, lv_palette_lighten(LV_PALETTE_GREY, 1));
-    lv_style_set_border_width(&style_title, 2);
-    lv_style_set_border_color(&style_title, lv_palette_main(LV_PALETTE_DEEP_PURPLE));
-    lv_style_set_pad_all(&style_title, 5);
-
-    lv_style_set_text_color(&style_title, lv_palette_main(LV_PALETTE_DEEP_PURPLE));
-    lv_style_set_text_letter_space(&style_title, 2);
-    lv_style_set_text_line_space(&style_title, 10);
-    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 5);
-
-    lv_obj_add_style(label, &style_title, 0);
-}
- */
-
-/*
-static void style_purple_btn(void)
-{
-    lv_style_init(&style_btn_purple);
-    lv_style_set_radius(&style_btn_purple, 10);
-    lv_style_set_bg_opa(&style_btn_purple, LV_OPA_COVER);
-    lv_style_set_bg_color(&style_btn_purple, lv_palette_lighten(LV_PALETTE_PURPLE, 2));
-    lv_style_set_border_width(&style_btn_purple, 2);
-    lv_style_set_border_color(&style_btn_purple, lv_color_black());
-    lv_style_set_border_opa(&style_btn_purple, LV_OPA_50);
-
-    //lv_style_init(&style_btn_pressed);
-    //lv_style_set_translate_y(&style_btn_pressed, 5); //Every time you trigger, move down 5 pixels
-}*/
 
 void create_second_screen_tab1(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xE9AAFF), 0);
     lv_scr_load(screen2);
-
-    /*
-    lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "¡HOLA! " "\xEE\xAD\x94");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
-
-    lv_obj_t * label2 = lv_label_create(screen2);
-    lv_label_set_text(label2, "Soy una herramienta para que \n  puedas registrar de manera \n      interactiva tus lecturas \n      a través de mi cámara");
-    lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 60);
-
-    lv_obj_t *label_separator = lv_label_create(screen2);
-    lv_label_set_text(label_separator, "---------------------------------------");
-    lv_obj_align(label_separator, LV_ALIGN_TOP_MID, 0, 150);
-
-    lv_obj_t * label3 = lv_label_create(screen2);
-    lv_label_set_text(label3, "\xF3\xB1\x89\x9F");
-    lv_obj_set_style_text_font(label3, &bigger_symbols, 0);
-    lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 180);
-
-    lv_obj_t * label4 = lv_label_create(screen2);
-    lv_label_set_text(label4, " Aquí podrás almacenar los \n  libros que estés leyendo");
-    lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 210);
-
-    lv_obj_t * label5 = lv_label_create(screen2);
-    lv_label_set_text(label5, "\xF3\xB0\x81\xB2");
-    lv_obj_set_style_text_font(label5, &bigger_symbols, 0);
-    lv_obj_align(label5, LV_ALIGN_TOP_MID, 0, 270);
-
-    lv_obj_t * label6 = lv_label_create(screen2);
-    lv_label_set_text(label6, " Aquí podrás registrar tus \n           nuevos libros. \nPara ello deberás mostrar \n    a la cámara el código \n      de barras del libro");
-    lv_obj_align(label6, LV_ALIGN_TOP_MID, 0, 300);
-
-    lv_obj_t * label7 = lv_label_create(screen2);
-    lv_label_set_text(label7, "\xF3\xB0\x84\xA8");
-    lv_obj_set_style_text_font(label7, &bigger_symbols, 0);
-    lv_obj_align(label7, LV_ALIGN_TOP_MID, 0, 420);
-
-    lv_obj_t * label8 = lv_label_create(screen2);
-    lv_label_set_text(label8, "Aquí podrás comprobar tu \n    avance con la lectura");
-    lv_obj_align(label8, LV_ALIGN_TOP_MID, 0, 450);*/
-
 
     // Definir los textos de las etiquetas y sus posiciones Y en un array
     const char *textos[] = {
@@ -444,25 +317,11 @@ void create_second_screen_tab1(lv_obj_t *padre) {
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_color_hex(0xC446FF), lv_color_hex(0x620090), go_to_screen2_tab1, 75, 180);
     create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 510);
 
     lv_obj_t * space = lv_label_create(screen2);
     lv_label_set_text(space, "\n\n\n");
     lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 510);
-
-
-
-    /*
-    lv_obj_t * back_btn = lv_btn_create(screen2);
-    lv_obj_set_size(back_btn, 80, 40);
-    lv_obj_align(back_btn, LV_ALIGN_CENTER, 0, 370);
-    lv_obj_add_event_cb(back_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL);
-    label = lv_label_create(back_btn);
-    lv_label_set_text(label, "\xF3\xB0\xA9\x88");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-    lv_obj_center(label);
-     */
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
@@ -473,39 +332,16 @@ static void go_to_screen2_tab1(lv_event_t * e) {
 }
 
 
+
 //--------------------------------------PESTAÑA 2---------------------------------------------------
 void tab2_content(lv_obj_t * parent) {
-    //general_title(parent, "MIS LIBROS", lv_palette_main(LV_PALETTE_DEEP_PURPLE), lv_palette_main(LV_PALETTE_DEEP_PURPLE));
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB1\x81\xAF");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_palette_main(LV_PALETTE_BLUE), lv_color_hex(0x007D9B), go_to_screen2_tab2, 75, 50);
     create_button(parent, symbol, BUTTON_STYLE_BLUE, go_to_screen2_tab2, 75, 50);
-
-    //blue_title(parent, "MIS LIBROS");
-
-    /*
-    style_blue_btn();
-
-    lv_obj_t * btn = lv_btn_create(parent);
-    lv_obj_t * labelbtn = lv_label_create(btn);
-
-    lv_obj_remove_style_all(btn);
-
-    lv_obj_set_pos(btn, 75, 50);
-    lv_obj_set_size(btn, 50, 50);
-    lv_obj_add_style(btn, &style_btn_blue, 0);
-    //lv_obj_add_style(btn, &style_btn_pressed, LV_STATE_PRESSED);
-    lv_label_set_text(labelbtn, "\xF3\xB1\x81\xAF");
-    lv_obj_set_style_text_font(labelbtn, &bigger_symbols, 0);
-    lv_obj_center(labelbtn);
-     */
-
-    //lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, NULL);
-
 
     struct Book {
         const char* title;
@@ -542,53 +378,7 @@ void tab2_content(lv_obj_t * parent) {
             lv_obj_align(label_separator, LV_ALIGN_TOP_LEFT, 0, 180 + i*80);
         }
     }
-
 }
-
-/*
-void blue_title(lv_obj_t * parent, const char * titulo) {
-    static lv_style_t style_title;
-
-    lv_obj_t * label = lv_label_create(parent); // Crea una etiqueta en la pantalla activa
-
-    lv_label_set_text(label, titulo); // Establece el texto de la etiqueta
-
-    lv_style_set_radius(&style_title, 5);
-    lv_style_set_bg_opa(&style_title, LV_OPA_COVER);
-    //lv_style_set_bg_color(&style_title, lv_palette_lighten(LV_PALETTE_GREY, 1));
-    lv_style_set_border_width(&style_title, 2);
-    lv_style_set_border_color(&style_title, lv_palette_main(LV_PALETTE_BLUE));
-    lv_style_set_pad_all(&style_title, 5);
-
-    lv_style_set_text_color(&style_title, lv_palette_main(LV_PALETTE_BLUE));
-    lv_style_set_text_letter_space(&style_title, 2);
-    lv_style_set_text_line_space(&style_title, 10);
-    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 5);
-
-    lv_obj_add_style(label, &style_title, 0);
-
-    //lv_obj_set_style_text_color(label, lv_color_make(128, 0, 128), 0);
-    //lv_obj_set_style_bg_color(label, lv_color_make(128, 0, 128), 0);
-    //lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-}*/
-
-/*
-static void style_blue_btn(void)
-{
-    lv_style_init(&style_btn_blue);
-    lv_style_set_radius(&style_btn_blue, 10);
-    lv_style_set_bg_opa(&style_btn_blue, LV_OPA_COVER);
-    lv_style_set_bg_color(&style_btn_blue, lv_palette_lighten(LV_PALETTE_LIGHT_BLUE, 2));
-    lv_style_set_border_width(&style_btn_blue, 2);
-    lv_style_set_border_color(&style_btn_blue, lv_color_black());
-    lv_style_set_border_opa(&style_btn_blue, LV_OPA_50);
-
-    //lv_style_init(&style_btn_pressed);
-    //lv_style_set_translate_y(&style_btn_pressed, 5); //Every time you trigger, move down 5 pixels
-}
-*/
 
 void create_second_screen_tab2(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -600,23 +390,11 @@ void create_second_screen_tab2(lv_obj_t *padre) {
     lv_label_set_text(label, "Hola, has cambiado de pantalla");
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
 
-
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_color_hex(0xC446FF), lv_color_hex(0x620090), go_to_screen2_tab1, 75, 180);
     create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 110);
-
-    /*
-    lv_obj_t * back_btn = lv_btn_create(screen2);
-    lv_obj_set_size(back_btn, 80, 40);
-    lv_obj_align(back_btn, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_add_event_cb(back_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL);
-    label = lv_label_create(back_btn);
-    lv_label_set_text(label, "\xF3\xB0\xA9\x88");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-    lv_obj_center(label);*/
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
@@ -627,9 +405,9 @@ static void go_to_screen2_tab2(lv_event_t * e) {
 }
 
 
+
 //--------------------------------------PESTAÑA 3---------------------------------------------------
 void tab3_content(lv_obj_t * parent) {
-    //orange_title(parent, "ESCANEAR LIBRO");
     general_title(parent, "ESCANEAR LIBRO", TITLE_STYLE_ORANGE);
 
     lv_obj_t * label = lv_label_create(parent);
@@ -644,64 +422,7 @@ void tab3_content(lv_obj_t * parent) {
     lv_label_set_text(symbol, "\xF3\xB0\x84\x84");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_color_hex(0xC446FF), lv_color_hex(0x620090), go_to_screen2_tab1, 75, 180);
     create_button(parent, symbol, BUTTON_STYLE_ORANGE, go_to_screen2_tab3, 75, 190);
-
-    /*
-    style_orange_btn();
-
-    lv_obj_t * btn = lv_btn_create(parent);
-    lv_obj_t * labelbtn = lv_label_create(btn);
-    lv_obj_add_event_cb(btn, go_to_screen2_tab3, LV_EVENT_CLICKED, NULL);
-
-    lv_obj_remove_style_all(btn);
-
-    lv_obj_set_pos(btn, 75, 190);
-    lv_obj_set_size(btn, 50, 50);
-    lv_obj_add_style(btn, &style_btn_orange, 0);
-    //lv_obj_add_style(btn, &style_btn_pressed, LV_STATE_PRESSED);
-    lv_label_set_text(labelbtn, "\xF3\xB0\x84\x84");
-    lv_obj_set_style_text_font(labelbtn, &bigger_symbols, 0);
-    lv_obj_center(labelbtn);*/
-
-}
-
-void orange_title(lv_obj_t * parent, const char * titulo) {
-    static lv_style_t style_title;
-
-    lv_obj_t * label = lv_label_create(parent); // Crea una etiqueta en la pantalla activa
-
-    lv_label_set_text(label, titulo); // Establece el texto de la etiqueta
-
-    lv_style_set_radius(&style_title, 5);
-    lv_style_set_bg_opa(&style_title, LV_OPA_COVER);
-    //lv_style_set_bg_color(&style_title, lv_palette_lighten(LV_PALETTE_GREY, 1));
-    lv_style_set_border_width(&style_title, 2);
-    lv_style_set_border_color(&style_title, lv_palette_main(LV_PALETTE_DEEP_ORANGE));
-    lv_style_set_pad_all(&style_title, 5);
-
-    lv_style_set_text_color(&style_title, lv_palette_main(LV_PALETTE_DEEP_ORANGE));
-    lv_style_set_text_letter_space(&style_title, 2);
-    lv_style_set_text_line_space(&style_title, 10);
-    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 5);
-
-    lv_obj_add_style(label, &style_title, 0);
-}
-
-static void style_orange_btn(void)
-{
-    lv_style_init(&style_btn_orange);
-    lv_style_set_radius(&style_btn_orange, 10);
-    lv_style_set_bg_opa(&style_btn_orange, LV_OPA_COVER);
-    lv_style_set_bg_color(&style_btn_orange, lv_palette_lighten(LV_PALETTE_ORANGE, 2));
-    lv_style_set_border_width(&style_btn_orange, 2);
-    lv_style_set_border_color(&style_btn_orange, lv_color_black());
-    lv_style_set_border_opa(&style_btn_orange, LV_OPA_50);
-
-    //lv_style_init(&style_btn_pressed);
-    //lv_style_set_translate_y(&style_btn_pressed, 5); //Every time you trigger, move down 5 pixels
 }
 
 // Función para crear la pantalla secundaria de la pestaña 3
@@ -715,24 +436,11 @@ void create_second_screen_tab3(lv_obj_t *padre) {
     lv_label_set_text(label, "Hola, has cambiado de pantalla");
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
 
-
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    //create_button(parent, symbol, lv_color_hex(0xC446FF), lv_color_hex(0x620090), go_to_screen2_tab1, 75, 180);
     create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 110);
-
-    /*
-    lv_obj_t * back_btn = lv_btn_create(screen2);
-    lv_obj_set_size(back_btn, 80, 40);
-    lv_obj_align(back_btn, LV_ALIGN_CENTER, 0, 20);
-    lv_obj_add_event_cb(back_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL);
-    label = lv_label_create(back_btn);
-    lv_label_set_text(label, "\xF3\xB0\xA9\x88");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-    lv_obj_center(label);*/
-
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab3
@@ -744,27 +452,9 @@ static void go_to_screen2_tab3(lv_event_t * e) {
 
 
 
-
-
-
-
-
-
-
 //--------------------------------------PESTAÑA 4---------------------------------------------------
-static void draw_event_cb(lv_event_t * e) {
-    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
-    if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
-
-    if(dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
-        const char * month[] = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"};
-        lv_snprintf(dsc->text, dsc->text_length, "%s", month[dsc->value % 12]);
-    }
-}
-
-
 static void tab4_content(lv_obj_t * parent){
-    green_title(parent, "MIS ESTADÍSTICAS");
+    general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
 
     lv_obj_t * chart = lv_chart_create(parent);
     lv_obj_set_size(chart, 145, 150);
@@ -803,7 +493,6 @@ static void tab4_content(lv_obj_t * parent){
     lv_chart_set_next_value(chart, ser1, 67);
     lv_chart_set_next_value(chart, ser1, 49);
     lv_chart_set_next_value(chart, ser1, 55);*/
-
 
 
     lv_coord_t * ser1_array = lv_chart_get_y_array(chart, ser1);
@@ -862,29 +551,14 @@ static void tab4_content(lv_obj_t * parent){
     lv_obj_set_style_pad_column(chart, 4, LV_PART_MAIN);    /*Space between columns of the adjacent index*/
 
     lv_chart_refresh(chart); /*Required after direct set*/
-
 }
 
-void green_title(lv_obj_t * parent, const char * titulo) {
-    static lv_style_t style_title;
+static void draw_event_cb(lv_event_t * e) {
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+    if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
 
-    lv_obj_t * label = lv_label_create(parent); // Crea una etiqueta en la pantalla activa
-
-    lv_label_set_text(label, titulo); // Establece el texto de la etiqueta
-
-    lv_style_set_radius(&style_title, 5);
-    lv_style_set_bg_opa(&style_title, LV_OPA_COVER);
-    //lv_style_set_bg_color(&style_title, lv_palette_lighten(LV_PALETTE_GREY, 1));
-    lv_style_set_border_width(&style_title, 2);
-    lv_style_set_border_color(&style_title, lv_color_make(0, 167, 15));
-    lv_style_set_pad_all(&style_title, 5);
-
-    lv_style_set_text_color(&style_title, lv_color_make(0, 167, 15));
-    lv_style_set_text_letter_space(&style_title, 2);
-    lv_style_set_text_line_space(&style_title, 10);
-    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 5);
-
-    lv_obj_add_style(label, &style_title, 0);
+    if(dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
+        const char * month[] = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"};
+        lv_snprintf(dsc->text, dsc->text_length, "%s", month[dsc->value % 12]);
+    }
 }
