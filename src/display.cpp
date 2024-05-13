@@ -1,7 +1,6 @@
 #include "display.h"
 #include "TFT_eSPI.h"
 #include "FT6336U.h"
-#include <TJpg_Decoder.h>
 
 static const uint16_t screenWidth  = 240;
 static const uint16_t screenHeight = 320;
@@ -10,8 +9,8 @@ static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * 10 ];
 
 TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
-FT6336U ft6336u(I2C_SDA, I2C_SCL, RST_N_PIN, INT_N_PIN);
-FT6336U_TouchPointType tp;
+FT6336U ft6336u(I2C_SDA, I2C_SCL, RST_N_PIN, INT_N_PIN); 
+FT6336U_TouchPointType tp; 
 
 
 #if LV_USE_LOG != 0
@@ -43,7 +42,7 @@ void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
     uint16_t touchX, touchY;
 
     //bool touched = tft.getTouch( &touchX, &touchY, 600 );
-    tp = ft6336u.scan();
+    tp = ft6336u.scan(); 
     int touched = tp.touch_count;
 
     if( !touched )
@@ -63,22 +62,9 @@ void my_touchpad_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * data )
     }
 }
 
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap){
-    if( y>= tft.height()) return 0;
-    tft.pushImage(x, y, w, h, bitmap);
-    return 1;
-}
-
-void Display::jpgdec(void){
-    TJpgDec.setJpgScale(1);
-    TJpgDec.setSwapBytes(true);
-    TJpgDec.setCallback(tft_output);
-}
-
-
 void Display::init(void)
 {
-    ft6336u.begin();
+    ft6336u.begin(); 
 #if LV_USE_LOG != 0
     lv_log_register_print_cb( my_print ); /* register print function for debugging */
 #endif

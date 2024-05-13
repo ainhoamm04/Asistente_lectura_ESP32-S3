@@ -21,7 +21,6 @@ private:
 public:
     void init();
     void routine();
-    void jpgdec();
 };
 
 #endif

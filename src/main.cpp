@@ -3,7 +3,9 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include "FT6336U.h"
-#include "img_btn_book.h"
+#include "sd_card.h"
+#include "camera.h"
+#include "camera_ui.h"
 
 Display screen;
 
@@ -11,7 +13,7 @@ Display screen;
 lv_obj_t *scr_principal;
 
 void tab_function(void);
-static void back_to_main_menu(lv_event_t * e);
+void back_to_main_menu(lv_event_t * e);
 
 // Enumeración para los diferentes estilos de títulos
 typedef enum {
@@ -42,6 +44,7 @@ static void go_to_screen2_tab2(lv_event_t * e);
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3(lv_obj_t *padre);
 static void go_to_screen2_tab3(lv_event_t * e);
+void initialize_and_load_camera();
 
 static void tab4_content(lv_obj_t * parent);
 static void draw_event_cb(lv_event_t * e);
@@ -51,7 +54,12 @@ int reto_pag_mes = 300;
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
+    //Serial.setDebugOutput(true);
+
+    sdcard_init();
+    camera_init();
     screen.init();
+
     tab_function();
 }
 
@@ -64,6 +72,7 @@ void loop() {
 
 
 //-------------------------DEFINICIÓN DE FUNCIONES------------------------------------
+
 void tab_function(void)
 {
     //Create a Tab view object
@@ -110,8 +119,7 @@ void tab_function(void)
 
 
 //---------------------------------Funciones generales------------------------------------------
-// Manejador de eventos para el botón de volver en la pantalla secundaria de tab3
-static void back_to_main_menu(lv_event_t * e) {
+void back_to_main_menu(lv_event_t * e) {
     lv_obj_t * current_screen = lv_obj_get_parent(lv_event_get_target(e)); // Obtener la pantalla actual (secundaria)
     lv_scr_load(scr_principal); // Obtener la pantalla principal (donde están las tabs)
     lv_obj_del(current_screen); // Eliminar la pantalla secundaria
@@ -427,20 +435,27 @@ void tab3_content(lv_obj_t * parent) {
 
 // Función para crear la pantalla secundaria de la pestaña 3
 void create_second_screen_tab3(lv_obj_t *padre) {
+
     lv_obj_t * screen2 = lv_obj_create(NULL);
-    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFC97A), 0);
+    //lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    //lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFC97A), 0);
     lv_scr_load(screen2);
 
+    // Inicializa la interfaz de usuario de la cámara
+    setup_scr_camera(&guider_camera_ui);
+    // Carga la interfaz de usuario de la cámara en la pantalla
+    lv_scr_load(guider_camera_ui.camera);
+
+    /*
     lv_obj_t * label = lv_label_create(screen2);
     lv_label_set_text(label, "Hola, has cambiado de pantalla");
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
 
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
-    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);*/
 
-    create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 110);
+    //create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 110);
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab3
