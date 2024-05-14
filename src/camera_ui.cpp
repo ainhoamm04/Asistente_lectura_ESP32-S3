@@ -52,6 +52,7 @@ void loopTask_camera(void *pvParameters) {
       }
       photo_show.data = fb_buf->buf;
       lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
+      //cargar aqui programa leer codigo de barras
     }
   }
   vTaskDelete(cameraTaskHandle);
@@ -119,6 +120,7 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
   lv_event_code_t code = lv_event_get_code(e);
 
     if (code == LV_EVENT_CLICKED) {
+        stop_camera_task();
         Serial.println("Clicked the home button.");
         back_to_main_menu(e); // Llamada a la función
     }
