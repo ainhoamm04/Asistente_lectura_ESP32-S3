@@ -71,6 +71,7 @@ void ui_set_photo_show(void) {
 }
 
 //Click the photo icon, callback function: goes to the main ui interface
+/*
 static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
   lv_event_code_t code = lv_event_get_code(e);
   if (code == LV_EVENT_CLICKED) {
@@ -111,6 +112,54 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
     create_camera_task();
   }
 }
+*/
+
+
+static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        Serial.println("Clicked the camera button.");
+        if (camera_task_flag == 1) {
+            stop_camera_task();
+            go_to_screen2(e);
+            create_camera_task();
+        }
+    }
+}
+
+//lv_obj_t *scr_principal;
+
+void create_second_screen(lv_obj_t *padre) {
+    lv_obj_t * screen2 = lv_obj_create(NULL);
+    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
+    lv_scr_load(screen2);
+
+    lv_obj_t * label = lv_label_create(screen2);
+    lv_label_set_text(label, "Hola, has cambiado de pantalla");
+    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+
+    // Botón de casa para volver a la pantalla principal
+    lv_obj_t * home_btn = lv_imgbtn_create(screen2);
+    lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
+
+    static lv_style_t style_btn_pressed;
+    lv_style_init(&style_btn_pressed);
+    lv_style_set_translate_y(&style_btn_pressed, 5);
+    lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
+
+    lv_obj_set_pos(home_btn, 75, 240); // Ajusta la posición según tus necesidades
+    lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
+    lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
+}
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
+static void go_to_screen2(lv_event_t * e) {
+    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
+    create_second_screen(main_screen);
+}
+
+
 
 
 
@@ -126,6 +175,7 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
     }
 }
 
+/*
 //Slide the screen to flip the screen
 static void camera_screen_gesture_event_handler(lv_event_t *e) {
   lv_event_code_t code = lv_event_get_code(e);
@@ -148,6 +198,7 @@ static void camera_screen_gesture_event_handler(lv_event_t *e) {
     }
   }
 }
+ */
 
 //Parameter configuration function on the camera screen
 void setup_scr_camera(lvgl_camera_ui *ui) {
@@ -188,6 +239,6 @@ void setup_scr_camera(lvgl_camera_ui *ui) {
 
   lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
-  lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
+  //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
   create_camera_task();
 }
