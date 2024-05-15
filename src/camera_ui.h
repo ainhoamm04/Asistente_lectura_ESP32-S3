@@ -27,4 +27,18 @@ void setup_scr_camera(lvgl_camera_ui *ui);   //Parameter configuration function 
 void back_to_main_menu(lv_event_t * e);
 void create_second_screen(lv_obj_t *padre);
 static void go_to_screen2(lv_event_t * e);
+
+class Book {
+public:
+    String title;
+    String author;
+    String pages;
+
+    Book(String title, String author, String pages) : title(title), author(author), pages(pages) {}
+};
+
+String get_book_number();
+Book compare_book_number();
+void show_numeric_keyboard(lv_obj_t * label);
+
 #endif

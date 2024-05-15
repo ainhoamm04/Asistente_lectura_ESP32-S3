@@ -127,7 +127,12 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
     }
 }
 
-//lv_obj_t *scr_principal;
+
+
+
+
+
+
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -135,9 +140,29 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
     lv_scr_load(screen2);
 
-    lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "Hola, has cambiado de pantalla");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
+    Book book = compare_book_number();
+    lv_obj_t * label1 = lv_label_create(screen2);
+    lv_label_set_text(label1, book.title.c_str());
+    lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+    lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 20);
+
+    lv_obj_t * label2 = lv_label_create(screen2);
+    lv_label_set_text(label2, book.author.c_str());
+    lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
+    lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 40);
+
+    lv_obj_t * label3 = lv_label_create(screen2);
+    lv_label_set_text(label3, book.pages.c_str());
+    lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
+    lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
+
+    // Crea una etiqueta para mostrar el número introducido por el usuario
+    lv_obj_t * label4 = lv_label_create(screen2);
+    lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
+    lv_label_set_text(label4, "¿En qué página te encuentras?");
+
+    // Muestra el teclado numérico
+    show_numeric_keyboard(label4);
 
     // Botón de casa para volver a la pantalla principal
     lv_obj_t * home_btn = lv_imgbtn_create(screen2);
@@ -148,7 +173,7 @@ void create_second_screen(lv_obj_t *padre) {
     lv_style_set_translate_y(&style_btn_pressed, 5);
     lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
 
-    lv_obj_set_pos(home_btn, 75, 240); // Ajusta la posición según tus necesidades
+    lv_obj_set_pos(home_btn, 75, 350); // Ajusta la posición según tus necesidades
     lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
     lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
 }
@@ -157,6 +182,73 @@ void create_second_screen(lv_obj_t *padre) {
 static void go_to_screen2(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
     create_second_screen(main_screen);
+}
+
+String get_book_number() {
+    return "9788416588435";
+}
+
+
+Book compare_book_number() {
+    String isbn = get_book_number();
+    if (isbn == "9788416588435") {
+        return Book("Invisible", "Eloy Moreno", "299 páginas");
+    } else if (isbn == "9788467539677") {
+        return Book("El vale de los lobos", "Laura Gallego", "271 páginas");
+    } else if (isbn == "9788467539684") {
+        return Book("La maldición del maestro", "Laura Gallego", "239 páginas");
+    } else if (isbn == "9788467539691") {
+        return Book("La llamada de los muertos", "Laura Gallego", "239 páginas");
+    } else if (isbn == "9788467539707") {
+        return Book("Fenris, el elfo", "Laura Gallego", "299 páginas");
+    } else {
+        return Book("LIBRO NO ENCONTRADO", "", "");
+    }
+}
+
+// Declaración de la función de devolución de llamada
+static void keyboard_event_cb(lv_event_t * e);
+
+// Implementación de la función
+void show_numeric_keyboard(lv_obj_t * label) {
+    // Crear un objeto textarea para almacenar el número introducido por el usuario
+    lv_obj_t * ta = lv_textarea_create(lv_scr_act());
+    lv_obj_set_size(ta, 100, 40); // Ajusta el tamaño según tus necesidades
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 110); // Ajusta la posición según tus necesidades
+
+    // Establecer el texto inicial del textarea a una cadena vacía
+    lv_textarea_set_text(ta, "");
+
+    // Crear un teclado numérico y asociarlo al textarea
+    lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
+    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUMBER);
+    lv_keyboard_set_textarea(kb, ta);
+
+    // Registrar la función de devolución de llamada para el evento LV_EVENT_READY
+    lv_obj_add_event_cb(kb, keyboard_event_cb, LV_EVENT_READY, label);
+}
+
+// Función de devolución de llamada para el evento LV_EVENT_READY del teclado
+static void keyboard_event_cb(lv_event_t * e) {
+    lv_obj_t * kb = lv_event_get_target(e);
+    lv_obj_t * ta = lv_keyboard_get_textarea(kb);
+    lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
+
+    // Cuando el usuario pulsa "Enter", el teclado genera un evento LV_EVENT_READY.
+    // En este punto, puedes obtener el texto del textarea y luego eliminar el teclado y el textarea.
+    if(lv_event_get_code(e) == LV_EVENT_READY) {
+        // Obtener el número introducido por el usuario
+        int number = atoi(lv_textarea_get_text(ta));
+
+        // Actualizar el número de páginas del libro y la etiqueta correspondiente
+        char buffer[32];
+        sprintf(buffer, "Página actual: %d", number);
+        lv_label_set_text(label, buffer);
+
+        // Limpiar
+        lv_obj_del(kb);
+        lv_obj_del(ta);
+    }
 }
 
 
