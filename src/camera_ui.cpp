@@ -160,6 +160,7 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * label4 = lv_label_create(screen2);
     lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
     lv_label_set_text(label4, "¿En qué página te encuentras?");
+    lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
 
     // Muestra el teclado numérico
     show_numeric_keyboard(label4);
@@ -219,9 +220,31 @@ void show_numeric_keyboard(lv_obj_t * label) {
     // Establecer el texto inicial del textarea a una cadena vacía
     lv_textarea_set_text(ta, "");
 
+    /*
     // Crear un teclado numérico y asociarlo al textarea
     lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
     lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUMBER);
+    lv_keyboard_set_textarea(kb, ta);
+     */
+
+    static const char * kb_map[] = {"1", "2", "3", LV_SYMBOL_BACKSPACE, "\n",
+                                    "4", "5", "6", LV_SYMBOL_NEW_LINE, "\n",
+                                    "7", "8", "9", LV_SYMBOL_OK, "\n",
+                                    "0", LV_SYMBOL_RIGHT, LV_SYMBOL_LEFT, NULL
+    };
+
+    /*Set the relative width of the buttons and other controls*/
+    static const lv_btnmatrix_ctrl_t kb_ctrl[] = {1, 1, 1, 2,
+                                                     1, 1, 1, 2,
+                                                     1, 1, 1, 2,
+                                                     3, 1, 1
+    };
+
+    /*Create a keyboard and add the new map as USER_1 mode*/
+    lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
+
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_USER_1, kb_map, kb_ctrl);
+    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_USER_1);
     lv_keyboard_set_textarea(kb, ta);
 
     // Registrar la función de devolución de llamada para el evento LV_EVENT_READY
@@ -239,6 +262,16 @@ static void keyboard_event_cb(lv_event_t * e) {
     if(lv_event_get_code(e) == LV_EVENT_READY) {
         // Obtener el número introducido por el usuario
         int number = atoi(lv_textarea_get_text(ta));
+
+        // Comprobar si el número introducido supera el límite
+        int max_value = 237; // Cambia esto por el valor máximo que quieres permitir
+        if(number > max_value) {
+            // Si el número introducido supera el límite, restablece el textarea al valor de max_value
+            char max_value_str[32];
+            sprintf(max_value_str, "%d", max_value);
+            lv_textarea_set_text(ta, max_value_str);
+            return;
+        }
 
         // Actualizar el número de páginas del libro y la etiqueta correspondiente
         char buffer[32];

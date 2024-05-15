@@ -285,6 +285,7 @@ static void tab1_content(lv_obj_t * parent)
 
     lv_obj_t * label = lv_label_create(parent);
     lv_label_set_text(label, "Yo seré tu asistente\n" "\t\t\t\t de lectura :)" "\n\n¿Quieres saber cómo \n\t\t\t\t\t\tfunciono?\n");
+    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(0x000000), LV_PART_MAIN);
     lv_obj_set_pos(label, 28, 60);
 }
@@ -313,6 +314,7 @@ void create_second_screen_tab1(lv_obj_t *padre) {
     for(int i = 0; i < sizeof(textos) / sizeof(textos[0]); i++) {
         lv_obj_t *label = lv_label_create(screen2);
         lv_label_set_text(label, textos[i]);
+        lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
         lv_obj_align(label, LV_ALIGN_TOP_MID, 0, posicionesY[i]);
 
         // Aplicar la fuente más grande a las etiquetas con símbolos
@@ -372,6 +374,7 @@ void tab2_content(lv_obj_t * parent) {
         lv_obj_align(label_title, LV_ALIGN_TOP_LEFT, 0, 120 + i*80);
 
         lv_obj_t *label_author = lv_label_create(parent);
+        lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
         lv_label_set_text(label_author, books[i].author);
         lv_obj_align(label_author, LV_ALIGN_TOP_LEFT, 0, 140 + i*80);
 
@@ -420,10 +423,12 @@ void tab3_content(lv_obj_t * parent) {
 
     lv_obj_t * label = lv_label_create(parent);
     lv_label_set_text(label, "¿Deseas agregar un nuevo \n     libro a tu biblioteca?");
+    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 50);
 
     lv_obj_t * label2 = lv_label_create(parent);
     lv_label_set_text(label2, "  Pincha en el botón para \nabrir la cámara y escanear \n               el libro");
+    lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
     lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 110);
 
     lv_obj_t * symbol = lv_label_create(parent);
