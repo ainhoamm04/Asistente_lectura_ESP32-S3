@@ -114,14 +114,24 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 }
 */
 
+String selected_isbn;
 
+// Modificación de la función camera_imgbtn_photo_event_handler
 static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         Serial.println("Clicked the camera button.");
         if (camera_task_flag == 1) {
             stop_camera_task();
-            set_book_number();
+            set_book_number(); // Llama a set_book_number
+            selected_isbn = get_book_number(); // Asigna el valor devuelto por get_book_number a selected_isbn
+            Book* book = search_by_isbn(selected_isbn);
+            if (book != nullptr) {
+                book->found = true;
+                Serial.println("Book found: " + book->title);
+            } else {
+                Serial.println("Book not found");
+            }
             go_to_screen2(e);
             create_camera_task();
         }

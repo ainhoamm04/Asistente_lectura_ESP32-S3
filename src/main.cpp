@@ -401,20 +401,41 @@ void tab2_content(lv_obj_t * parent) {
     }
 }*/
 
+
+// Variable global para almacenar el ISBN del libro seleccionado
+//String selected_isbn;
+
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
     for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
-        // Solo crea la etiqueta y el botón si el título del libro es diferente de "LIBRO NO ENCONTRADO"
-        if(book_array[i].title != "LIBRO NO ENCONTRADO") {
+        // Imprime en la consola el título del libro y si se ha encontrado
+        Serial.print("Libro: ");
+        Serial.print(book_array[i].title);
+        Serial.print(" - Encontrado: ");
+        Serial.println(book_array[i].found ? "Sí" : "No");
+
+        // Solo crea la etiqueta y el botón si el libro ha sido encontrado
+        if(book_array[i].found) {
             lv_obj_t *label = lv_label_create(parent);
             lv_label_set_text(label, book_array[i].title.c_str());
             lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
 
             // Añade la lógica para el evento de presionado
+            // Pasa el ISBN del libro como datos del usuario
             create_button(parent, label, BUTTON_STYLE_BLUE_LARGE, go_to_screen2_tab2, 0, 50 + i*50);
         }
     }
+}
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
+static void go_to_screen2_tab2(lv_event_t * e) {
+    // Almacena el ISBN del libro seleccionado
+    selected_isbn = (char*)lv_event_get_user_data(e);
+
+    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
+    scr_principal = main_screen;
+    create_second_screen_tab2(main_screen);
 }
 
 void create_second_screen_tab2(lv_obj_t *padre) {
@@ -423,8 +444,17 @@ void create_second_screen_tab2(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0x9DE4FF), 0);
     lv_scr_load(screen2);
 
+    // Busca el libro con el ISBN seleccionado
+    Book* selected_book = search_by_isbn(selected_isbn);
+
+    // Muestra la información del libro seleccionado
+    // (Asegúrate de reemplazar esto con tu propio código para mostrar la información del libro)
     lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "Hola, has cambiado de pantalla");
+    const char* title = selected_book->title.c_str();
+    const char* author = selected_book->author.c_str();
+    int pages = selected_book->pages.toInt();
+
+    lv_label_set_text_fmt(label, "Título: %s\nAutor: %s\nPáginas: %d", title, author, pages);
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
 
     lv_obj_t * symbol = lv_label_create(screen2);
@@ -432,13 +462,6 @@ void create_second_screen_tab2(lv_obj_t *padre) {
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
     create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 110);
-}
-
-// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
-static void go_to_screen2_tab2(lv_event_t * e) {
-    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
-    scr_principal = main_screen;
-    create_second_screen_tab2(main_screen);
 }
 
 

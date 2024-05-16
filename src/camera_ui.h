@@ -35,8 +35,10 @@ public:
     String pages;
     String isbn;
     int current_page;
+    bool found; // Añade esta línea
 
-    Book(String title, String author, String pages, String isbn, int current_page) : title(title), author(author), pages(pages), isbn(isbn), current_page(current_page) {}
+    Book(String title, String author, String pages, String isbn, int current_page, bool found = false)
+        : title(title), author(author), pages(pages), isbn(isbn), current_page(current_page), found(found) {}
 };
 
 // Crear los objetos Book de antemano
@@ -49,6 +51,8 @@ extern Book bookNotFound;
 
 extern Book book_array[6];
 
+// Declaración de selected_isbn como variable global
+extern String selected_isbn;
 
 //Book get_book_by_isbn(const String& isbn);
 Book* search_by_isbn(const String& isbn);
