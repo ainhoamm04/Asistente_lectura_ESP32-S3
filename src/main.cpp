@@ -404,17 +404,10 @@ void tab2_content(lv_obj_t * parent) {
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
-    Book books[] = {
-        {"El valle de los lobos", "Autora Laura Gallego", "271 páginas"},
-        {"La maldición del maestro", "Autora Laura Gallego", "239 páginas"},
-        {"La llamada de los muertos", "Autora Laura Gallego", "239 páginas"},
-        {"Fenris, el elfo", "Autora Laura Gallego", "271 páginas"},
-        {"Invisible", "Autor Eloy Moreno", "299 páginas"}
-    };
 
-    for(int i = 0; i < sizeof(books)/sizeof(Book); i++) {
+    for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
         lv_obj_t *label = lv_label_create(parent);
-        lv_label_set_text(label, books[i].title.c_str());
+        lv_label_set_text(label, book_array[i].title.c_str());
         lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
 
         // Añade la lógica para el evento de presionado

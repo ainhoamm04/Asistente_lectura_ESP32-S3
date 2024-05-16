@@ -166,6 +166,8 @@ void create_second_screen(lv_obj_t *padre) {
 
         // Muestra el teclado numérico
         show_numeric_keyboard(label4);
+
+
     } else {
         lv_obj_t * home_btn = lv_imgbtn_create(screen2);
         lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
@@ -204,61 +206,79 @@ static void go_to_screen2(lv_event_t * e) {
 
 
 int camera_button_press_count = 0;
-String isbn = "";
+String isbn_aux;
 void set_book_number() {
     camera_button_press_count++;
     if (camera_button_press_count == 1) {
-        isbn = "9788416588435"; //Invisible
+        isbn_aux = "9788416588435"; //Invisible
         //return isbn;
     } else if (camera_button_press_count == 2) {
-        isbn = "9788467539677"; //El valle de los lobos
+        isbn_aux = "9788467539677"; //El valle de los lobos
         //return isbn;
     } else if (camera_button_press_count == 3) {
-        isbn = "9788467539677"; //El valle de los lobos
+        isbn_aux = "9788467539677"; //El valle de los lobos
         //return isbn;
     } else if (camera_button_press_count == 4) {
-        isbn = "9788416588435"; //Invisible
+        isbn_aux = "9788416588435"; //Invisible
         //return isbn;
     } else if (camera_button_press_count == 5) {
-        isbn = "9788467539707"; //Fenris, el elfo
+        isbn_aux = "9788467539707"; //Fenris, el elfo
         //return isbn;
     }
 
     else {
-        isbn = "";
+        isbn_aux = "";
         //return ""; // Devuelve una cadena vacía o cualquier valor por defecto después de la segunda pulsación
     }
 }
 
 // Función para obtener el ISBN del libro actual
 String get_book_number() {
-    return isbn;
+    return isbn_aux;
 }
 
 
-// Crear los objetos Book de antemano
-Book book1("Invisible", "Eloy Moreno", "299 páginas");
-Book book2("El valle de los lobos", "Laura Gallego", "271 páginas");
-Book book3("La maldición del maestro", "Laura Gallego", "239 páginas");
-Book book4("La llamada de los muertos", "Laura Gallego", "239 páginas");
-Book book5("Fenris, el elfo", "Laura Gallego", "299 páginas");
-Book bookNotFound("LIBRO NO ENCONTRADO", "", "");
 
-Book get_book_by_isbn(const String& isbn) {
+
+Book search_by_isbn(String isbn_aux){
+    int i = 0;
+    int salida = 0;
+    while(salida == 0){
+        if (isbn_aux == book_array[i].isbn){
+            return book_array[i];
+            salida = 1;
+        } else {
+            i++;
+        } if (i == 5){
+            return book_array[5];
+            salida = 1;
+        }
+    }
+}
+
+
+
+/*
+Book get_book_by_isbn(const String& isbn, int number) {
     if (isbn == "9788416588435") {
+        isbnMatrix[0][1] = number;
         return book1;
     } else if (isbn == "9788467539677") {
+        isbnMatrix[1][1] = number;
         return book2;
     } else if (isbn == "9788467539684") {
+        isbnMatrix[2][1] = number;
         return book3;
     } else if (isbn == "9788467539691") {
+        isbnMatrix[3][1] = number;
         return book4;
     } else if (isbn == "9788467539707") {
+        isbnMatrix[4][1] = number;
         return book5;
     } else {
         return bookNotFound;
     }
-}
+}*/
 
 
 // Declaración de la función de devolución de llamada
@@ -312,21 +332,21 @@ static void keyboard_event_cb(lv_event_t * e) {
     lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
 
     if(lv_event_get_code(e) == LV_EVENT_READY) {
-        int number = atoi(lv_textarea_get_text(ta));
-        int max_value = 299;
+        String number = lv_textarea_get_text(ta);
+        /*int max_value = 299;
         if(number > max_value) {
             char max_value_str[32];
             sprintf(max_value_str, "%d", max_value);
             lv_textarea_set_text(ta, max_value_str);
             return;
-        }
+        }*/
 
         // Actualizar la variable de página correspondiente al libro actual
-        Book current_book = get_book_by_isbn(get_book_number());
-        current_book.currentPage = number;
+        Book current_book = search_by_isbn(isbn_aux);
+        current_book.current_page = number;
 
         char buffer[32];
-        sprintf(buffer, "Página actual: %d", number);
+        //sprintf(buffer, "Página actual: %d", number);
         lv_label_set_text(label, buffer);
 
         lv_obj_del(kb);
