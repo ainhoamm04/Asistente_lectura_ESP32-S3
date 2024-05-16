@@ -132,7 +132,11 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 
 
 
-
+int pag_book1 = 0;
+int pag_book2 = 0;
+int pag_book3 = 0;
+int pag_book4 = 0;
+int pag_book5 = 0;
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -140,7 +144,7 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
     lv_scr_load(screen2);
 
-    Book book = compare_book_number();
+    Book book = get_book_by_isbn(get_book_number());
     lv_obj_t * label1 = lv_label_create(screen2);
     lv_label_set_text(label1, book.title.c_str());
     lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
@@ -156,14 +160,17 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
     lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
 
-    // Crea una etiqueta para mostrar el número introducido por el usuario
-    lv_obj_t * label4 = lv_label_create(screen2);
-    lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
-    lv_label_set_text(label4, "¿En qué página te encuentras?");
-    lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
+    // Si el libro fue encontrado, muestra la etiqueta y el teclado numérico
+    if (book.title != "LIBRO NO ENCONTRADO") {
+        // Crea una etiqueta para mostrar el número introducido por el usuario
+        lv_obj_t * label4 = lv_label_create(screen2);
+        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
+        lv_label_set_text(label4, "¿En qué página te encuentras?");
+        lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
 
-    // Muestra el teclado numérico
-    show_numeric_keyboard(label4);
+        // Muestra el teclado numérico
+        show_numeric_keyboard(label4);
+    }
 
     // Botón de casa para volver a la pantalla principal
     lv_obj_t * home_btn = lv_imgbtn_create(screen2);
@@ -185,27 +192,58 @@ static void go_to_screen2(lv_event_t * e) {
     create_second_screen(main_screen);
 }
 
+
+int camera_button_press_count = 0;
 String get_book_number() {
-    return "9788416588435";
-}
+    String isbn;
+    camera_button_press_count++;
+    if (camera_button_press_count == 1) {
+        isbn = "9788416588435";
+        return isbn;
+    } else if (camera_button_press_count == 2) {
+        isbn = "9788467539677";
+        return isbn;
+    } else if (camera_button_press_count == 3) {
+        isbn = "9788467539677";
+        return isbn;
+    } else if (camera_button_press_count == 4) {
+        isbn = "9788416588435";
+        return isbn;
+    } else if (camera_button_press_count == 5) {
+        isbn = "9788467539707";
+        return isbn;
+    }
 
-
-Book compare_book_number() {
-    String isbn = get_book_number();
-    if (isbn == "9788416588435") {
-        return Book("Invisible", "Eloy Moreno", "299 páginas");
-    } else if (isbn == "9788467539677") {
-        return Book("El vale de los lobos", "Laura Gallego", "271 páginas");
-    } else if (isbn == "9788467539684") {
-        return Book("La maldición del maestro", "Laura Gallego", "239 páginas");
-    } else if (isbn == "9788467539691") {
-        return Book("La llamada de los muertos", "Laura Gallego", "239 páginas");
-    } else if (isbn == "9788467539707") {
-        return Book("Fenris, el elfo", "Laura Gallego", "299 páginas");
-    } else {
-        return Book("LIBRO NO ENCONTRADO", "", "");
+    else {
+        return ""; // Devuelve una cadena vacía o cualquier valor por defecto después de la segunda pulsación
     }
 }
+
+
+// Crear los objetos Book de antemano
+Book book1("Invisible", "Eloy Moreno", "299 páginas");
+Book book2("El valle de los lobos", "Laura Gallego", "271 páginas");
+Book book3("La maldición del maestro", "Laura Gallego", "239 páginas");
+Book book4("La llamada de los muertos", "Laura Gallego", "239 páginas");
+Book book5("Fenris, el elfo", "Laura Gallego", "299 páginas");
+Book bookNotFound("LIBRO NO ENCONTRADO", "", "");
+
+Book get_book_by_isbn(const String& isbn) {
+    if (isbn == "9788416588435") {
+        return book1;
+    } else if (isbn == "9788467539677") {
+        return book2;
+    } else if (isbn == "9788467539684") {
+        return book3;
+    } else if (isbn == "9788467539691") {
+        return book4;
+    } else if (isbn == "9788467539707") {
+        return book5;
+    } else {
+        return bookNotFound;
+    }
+}
+
 
 // Declaración de la función de devolución de llamada
 static void keyboard_event_cb(lv_event_t * e);
@@ -257,28 +295,24 @@ static void keyboard_event_cb(lv_event_t * e) {
     lv_obj_t * ta = lv_keyboard_get_textarea(kb);
     lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
 
-    // Cuando el usuario pulsa "Enter", el teclado genera un evento LV_EVENT_READY.
-    // En este punto, puedes obtener el texto del textarea y luego eliminar el teclado y el textarea.
     if(lv_event_get_code(e) == LV_EVENT_READY) {
-        // Obtener el número introducido por el usuario
         int number = atoi(lv_textarea_get_text(ta));
-
-        // Comprobar si el número introducido supera el límite
-        int max_value = 237; // Cambia esto por el valor máximo que quieres permitir
+        int max_value = 299;
         if(number > max_value) {
-            // Si el número introducido supera el límite, restablece el textarea al valor de max_value
             char max_value_str[32];
             sprintf(max_value_str, "%d", max_value);
             lv_textarea_set_text(ta, max_value_str);
             return;
         }
 
-        // Actualizar el número de páginas del libro y la etiqueta correspondiente
+        // Actualizar la variable de página correspondiente al libro actual
+        Book current_book = get_book_by_isbn(get_book_number());
+        //*(current_book.currentPage) = number;
+
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);
         lv_label_set_text(label, buffer);
 
-        // Limpiar
         lv_obj_del(kb);
         lv_obj_del(ta);
     }
@@ -367,3 +401,4 @@ void setup_scr_camera(lvgl_camera_ui *ui) {
   //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
   create_camera_task();
 }
+

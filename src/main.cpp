@@ -28,6 +28,7 @@ void general_title(lv_obj_t * parent, const char * titulo, title_style_t style);
 typedef enum {
     BUTTON_STYLE_PURPLE,
     BUTTON_STYLE_BLUE,
+    BUTTON_STYLE_BLUE_LARGE,
     BUTTON_STYLE_ORANGE,
     BUTTON_STYLE_GREEN
 } button_style_t;
@@ -199,6 +200,7 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
     static lv_style_t style_purple, style_blue, style_orange, style_green;
     static lv_style_t style_btn_pressed;
     static lv_style_t style_btn;
+    static lv_style_t style_btn_large;
 
     // Inicializa los estilos si no se han inicializado antes
     static bool styles_initialized = false;
@@ -243,15 +245,23 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
     switch (style) {
         case BUTTON_STYLE_PURPLE:
             lv_obj_add_style(btn, &style_purple, 0);
+            lv_obj_set_size(btn, 50, 50);
             break;
         case BUTTON_STYLE_BLUE:
             lv_obj_add_style(btn, &style_blue, 0);
+            lv_obj_set_size(btn, 50, 50);
+            break;
+        case BUTTON_STYLE_BLUE_LARGE:
+            lv_obj_add_style(btn, &style_blue, 0);
+            lv_obj_set_size(btn, 210, 40);
             break;
         case BUTTON_STYLE_ORANGE:
             lv_obj_add_style(btn, &style_orange, 0);
+            lv_obj_set_size(btn, 50, 50);
             break;
         case BUTTON_STYLE_GREEN:
             lv_obj_add_style(btn, &style_green, 0);
+            lv_obj_set_size(btn, 50, 50);
             break;
     }
 
@@ -263,7 +273,6 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
     lv_obj_center(label); // Centra la etiqueta en el botón
 
     // Configura el tamaño y la posición del botón
-    lv_obj_set_size(btn, 50, 50); // Tamaño del botón
     lv_obj_set_pos(btn, pos_x, pos_y); // Posición del botón modificable
 
     // Añade la lógica para el evento de presionado
@@ -344,6 +353,7 @@ static void go_to_screen2_tab1(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 2---------------------------------------------------
+/*
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
@@ -388,6 +398,27 @@ void tab2_content(lv_obj_t * parent) {
             lv_label_set_text(label_separator, "---------------------------------------");
             lv_obj_align(label_separator, LV_ALIGN_TOP_LEFT, 0, 180 + i*80);
         }
+    }
+}*/
+
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    Book books[] = {
+        {"El valle de los lobos", "Autora Laura Gallego", "271 páginas"},
+        {"La maldición del maestro", "Autora Laura Gallego", "239 páginas"},
+        {"La llamada de los muertos", "Autora Laura Gallego", "239 páginas"},
+        {"Fenris, el elfo", "Autora Laura Gallego", "271 páginas"},
+        {"Invisible", "Autor Eloy Moreno", "299 páginas"}
+    };
+
+    for(int i = 0; i < sizeof(books)/sizeof(Book); i++) {
+        lv_obj_t *label = lv_label_create(parent);
+        lv_label_set_text(label, books[i].title.c_str());
+        lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
+
+        // Añade la lógica para el evento de presionado
+        create_button(parent, label, BUTTON_STYLE_BLUE_LARGE, go_to_screen2_tab2, 0, 50 + i*50);
     }
 }
 
