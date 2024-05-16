@@ -33,18 +33,14 @@ public:
     String title;
     String author;
     String pages;
-    //int* currentPage;
+    int currentPage;
 
-    Book(String title, String author, String pages) : title(title), author(author), pages(pages){}
+    Book(String title, String author, String pages) : title(title), author(author), pages(pages), currentPage(0) {}
 };
 
-extern int pag_book1;
-extern int pag_book2;
-extern int pag_book3;
-extern int pag_book4;
-extern int pag_book5;
 
 Book get_book_by_isbn(const String& isbn);
+void set_book_number();
 String get_book_number();
 void show_numeric_keyboard(lv_obj_t * label);
 extern int camera_button_press_count;

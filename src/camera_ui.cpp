@@ -121,6 +121,7 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
         Serial.println("Clicked the camera button.");
         if (camera_task_flag == 1) {
             stop_camera_task();
+            set_book_number();
             go_to_screen2(e);
             create_camera_task();
         }
@@ -132,11 +133,6 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 
 
 
-int pag_book1 = 0;
-int pag_book2 = 0;
-int pag_book3 = 0;
-int pag_book4 = 0;
-int pag_book5 = 0;
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -208,29 +204,35 @@ static void go_to_screen2(lv_event_t * e) {
 
 
 int camera_button_press_count = 0;
-String get_book_number() {
-    String isbn;
+String isbn = "";
+void set_book_number() {
     camera_button_press_count++;
     if (camera_button_press_count == 1) {
-        isbn = "9788416588435";
-        return isbn;
+        isbn = "9788416588435"; //Invisible
+        //return isbn;
     } else if (camera_button_press_count == 2) {
-        isbn = "9788467539677";
-        return isbn;
+        isbn = "9788467539677"; //El valle de los lobos
+        //return isbn;
     } else if (camera_button_press_count == 3) {
-        isbn = "9788467539677";
-        return isbn;
+        isbn = "9788467539677"; //El valle de los lobos
+        //return isbn;
     } else if (camera_button_press_count == 4) {
-        isbn = "9788416588435";
-        return isbn;
+        isbn = "9788416588435"; //Invisible
+        //return isbn;
     } else if (camera_button_press_count == 5) {
-        isbn = "9788467539707";
-        return isbn;
+        isbn = "9788467539707"; //Fenris, el elfo
+        //return isbn;
     }
 
     else {
-        return ""; // Devuelve una cadena vacía o cualquier valor por defecto después de la segunda pulsación
+        isbn = "";
+        //return ""; // Devuelve una cadena vacía o cualquier valor por defecto después de la segunda pulsación
     }
+}
+
+// Función para obtener el ISBN del libro actual
+String get_book_number() {
+    return isbn;
 }
 
 
@@ -321,7 +323,7 @@ static void keyboard_event_cb(lv_event_t * e) {
 
         // Actualizar la variable de página correspondiente al libro actual
         Book current_book = get_book_by_isbn(get_book_number());
-        //*(current_book.currentPage) = number;
+        current_book.currentPage = number;
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);
