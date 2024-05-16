@@ -404,14 +404,16 @@ void tab2_content(lv_obj_t * parent) {
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
-
     for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
-        lv_obj_t *label = lv_label_create(parent);
-        lv_label_set_text(label, book_array[i].title.c_str());
-        lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
+        // Solo crea la etiqueta y el botón si el título del libro es diferente de "LIBRO NO ENCONTRADO"
+        if(book_array[i].title != "LIBRO NO ENCONTRADO") {
+            lv_obj_t *label = lv_label_create(parent);
+            lv_label_set_text(label, book_array[i].title.c_str());
+            lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
 
-        // Añade la lógica para el evento de presionado
-        create_button(parent, label, BUTTON_STYLE_BLUE_LARGE, go_to_screen2_tab2, 0, 50 + i*50);
+            // Añade la lógica para el evento de presionado
+            create_button(parent, label, BUTTON_STYLE_BLUE_LARGE, go_to_screen2_tab2, 0, 50 + i*50);
+        }
     }
 }
 

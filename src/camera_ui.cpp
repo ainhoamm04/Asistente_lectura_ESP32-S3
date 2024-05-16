@@ -148,24 +148,24 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
     lv_scr_load(screen2);
 
-    Book book = search_by_isbn(get_book_number());
+    Book* book = search_by_isbn(get_book_number());
     lv_obj_t * label1 = lv_label_create(screen2);
-    lv_label_set_text(label1, book.title.c_str());
+    lv_label_set_text(label1, book->title.c_str());
     lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
     lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 20);
 
     lv_obj_t * label2 = lv_label_create(screen2);
-    lv_label_set_text(label2, book.author.c_str());
+    lv_label_set_text(label2, book->author.c_str());
     lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
     lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 40);
 
     lv_obj_t * label3 = lv_label_create(screen2);
-    lv_label_set_text(label3, book.pages.c_str());
+    lv_label_set_text(label3, book->pages.c_str());
     lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
     lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
 
     // Si el libro fue encontrado, muestra la etiqueta y el teclado numérico
-    if (book.title != "LIBRO NO ENCONTRADO") {
+    if (book->title != "LIBRO NO ENCONTRADO") {
         // Crea una etiqueta para mostrar el número introducido por el usuario
         lv_obj_t * label4 = lv_label_create(screen2);
         lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
@@ -176,7 +176,7 @@ void create_second_screen(lv_obj_t *padre) {
         show_numeric_keyboard(label4);
 
         // Obtén el libro actual
-        Book current_book = search_by_isbn(get_book_number());
+        Book* current_book = search_by_isbn(get_book_number());
 
         // Crea una etiqueta para mostrar la página actual del libro
         lv_obj_t * label_current_page = lv_label_create(screen2);
@@ -185,7 +185,7 @@ void create_second_screen(lv_obj_t *padre) {
 
         // Convierte la página actual a string
         char current_page_str[32];
-        sprintf(current_page_str, "%d", current_book.current_page);
+        sprintf(current_page_str, "%d", current_book->current_page);
 
         // Establece el texto de la etiqueta al valor de la página actual del libro
         lv_label_set_text_fmt(label_current_page, "Página actual: %s", current_page_str);
@@ -240,9 +240,12 @@ void set_book_number() {
         isbn_aux = "9788467539677"; //El valle de los lobos
         //return isbn;
     } else if (camera_button_press_count == 4) {
-        isbn_aux = "9788416588435"; //Invisible
+        isbn_aux = "9788467539677"; //El valle de los lobos
         //return isbn;
     } else if (camera_button_press_count == 5) {
+        isbn_aux = "9788416588435"; //Invisible
+        //return isbn;
+    } else if (camera_button_press_count == 6) {
         isbn_aux = "9788467539707"; //Fenris, el elfo
         //return isbn;
     }
@@ -277,13 +280,13 @@ Book search_by_isbn(String isbn_aux){
     }
 }*/
 
-Book search_by_isbn(const String& isbn) {
+Book* search_by_isbn(const String& isbn) {
     for(int i = 0; i < 6; i++) {
         if(book_array[i].isbn == isbn) {
-            return book_array[i];
+            return &book_array[i];
         }
     }
-    return bookNotFound; // return bookNotFound if no match is found
+    return &bookNotFound; // return pointer to bookNotFound if no match is found
 }
 
 /*
@@ -361,7 +364,13 @@ static void keyboard_event_cb(lv_event_t * e) {
 
     if(lv_event_get_code(e) == LV_EVENT_READY) {
         int number = atoi(lv_textarea_get_text(ta));
-        int max_value = 299;
+
+        // Obtén el libro actual
+        Book* current_book = search_by_isbn(get_book_number());
+
+        // Convierte el número de páginas a un entero
+        int max_value = atoi(current_book->pages.c_str());
+
         if(number > max_value) {
             char max_value_str[32];
             sprintf(max_value_str, "%d", max_value);
@@ -370,8 +379,7 @@ static void keyboard_event_cb(lv_event_t * e) {
         }
 
         // Actualizar la variable de página correspondiente al libro actual
-        Book current_book = search_by_isbn(isbn_aux);
-        current_book.current_page = number;
+        current_book->current_page = number;
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);

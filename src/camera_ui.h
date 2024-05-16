@@ -51,7 +51,7 @@ extern Book book_array[6];
 
 
 //Book get_book_by_isbn(const String& isbn);
-Book search_by_isbn(const String& isbn);
+Book* search_by_isbn(const String& isbn);
 void set_book_number();
 String get_book_number();
 void show_numeric_keyboard(lv_obj_t * label);
