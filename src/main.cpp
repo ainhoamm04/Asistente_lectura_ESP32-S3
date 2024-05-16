@@ -409,12 +409,6 @@ void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
     for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
-        // Imprime en la consola el título del libro y si se ha encontrado
-        Serial.print("Libro: ");
-        Serial.print(book_array[i].title);
-        Serial.print(" - Encontrado: ");
-        Serial.println(book_array[i].found ? "Sí" : "No");
-
         // Solo crea la etiqueta y el botón si el libro ha sido encontrado
         if(book_array[i].found) {
             lv_obj_t *label = lv_label_create(parent);
