@@ -34,23 +34,24 @@ public:
     String author;
     String pages;
     String isbn;
-    String current_page;
+    int current_page;
 
-    Book(String title, String author, String pages, String isbn, String current_page) : title(title), author(author), pages(pages), isbn(isbn), current_page(current_page) {}
+    Book(String title, String author, String pages, String isbn, int current_page) : title(title), author(author), pages(pages), isbn(isbn), current_page(current_page) {}
 };
 
 // Crear los objetos Book de antemano
-Book book1("Invisible", "Eloy Moreno", "299 paginas", "9788416588435", "0");
-Book book2("El valle de los lobos", "Laura Gallego", "271 paginas", "9788467539677", "0");
-Book book3("La maldicion del maestro", "Laura Gallego", "239 paginas", "9788467539684", "0");
-Book book4("La llamada de los muertos", "Laura Gallego", "239 paginas", "9788467539691", "0");
-Book book5("Fenris, el elfo", "Laura Gallego", "299 paginas", "9788467539707", "0");
-Book bookNotFound("LIBRO NO ENCONTRADO", "", "", "", "");
+extern Book book1;
+extern Book book2;
+extern Book book3;
+extern Book book4;
+extern Book book5;
+extern Book bookNotFound;
 
-extern Book book_array[6] = {book1, book2, book3, book4, book5, bookNotFound};
+extern Book book_array[6];
 
 
-Book get_book_by_isbn(const String& isbn);
+//Book get_book_by_isbn(const String& isbn);
+Book search_by_isbn(const String& isbn);
 void set_book_number();
 String get_book_number();
 void show_numeric_keyboard(lv_obj_t * label);

@@ -133,6 +133,14 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 
 
 
+Book book1("Invisible", "Eloy Moreno", "299 paginas", "9788416588435", 0);
+Book book2("El valle de los lobos", "Laura Gallego", "271 paginas", "9788467539677", 0);
+Book book3("La maldicion del maestro", "Laura Gallego", "239 paginas", "9788467539684", 0);
+Book book4("La llamada de los muertos", "Laura Gallego", "239 paginas", "9788467539691", 0);
+Book book5("Fenris, el elfo", "Laura Gallego", "299 paginas", "9788467539707", 0);
+Book bookNotFound("LIBRO NO ENCONTRADO", "", "", "", 0);
+
+Book book_array[6] = {book1, book2, book3, book4, book5, bookNotFound};
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -140,7 +148,7 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
     lv_scr_load(screen2);
 
-    Book book = get_book_by_isbn(get_book_number());
+    Book book = search_by_isbn(get_book_number());
     lv_obj_t * label1 = lv_label_create(screen2);
     lv_label_set_text(label1, book.title.c_str());
     lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
@@ -167,7 +175,20 @@ void create_second_screen(lv_obj_t *padre) {
         // Muestra el teclado numérico
         show_numeric_keyboard(label4);
 
+        // Obtén el libro actual
+        Book current_book = search_by_isbn(get_book_number());
 
+        // Crea una etiqueta para mostrar la página actual del libro
+        lv_obj_t * label_current_page = lv_label_create(screen2);
+        lv_obj_set_style_text_font(label_current_page, &ubuntu_regular_16, 0);
+        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 350); // Ajusta la posición según tus necesidades
+
+        // Convierte la página actual a string
+        char current_page_str[32];
+        sprintf(current_page_str, "%d", current_book.current_page);
+
+        // Establece el texto de la etiqueta al valor de la página actual del libro
+        lv_label_set_text_fmt(label_current_page, "Página actual: %s", current_page_str);
     } else {
         lv_obj_t * home_btn = lv_imgbtn_create(screen2);
         lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
@@ -239,7 +260,7 @@ String get_book_number() {
 
 
 
-
+/*
 Book search_by_isbn(String isbn_aux){
     int i = 0;
     int salida = 0;
@@ -254,9 +275,16 @@ Book search_by_isbn(String isbn_aux){
             salida = 1;
         }
     }
+}*/
+
+Book search_by_isbn(const String& isbn) {
+    for(int i = 0; i < 6; i++) {
+        if(book_array[i].isbn == isbn) {
+            return book_array[i];
+        }
+    }
+    return bookNotFound; // return bookNotFound if no match is found
 }
-
-
 
 /*
 Book get_book_by_isbn(const String& isbn, int number) {
@@ -332,21 +360,21 @@ static void keyboard_event_cb(lv_event_t * e) {
     lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
 
     if(lv_event_get_code(e) == LV_EVENT_READY) {
-        String number = lv_textarea_get_text(ta);
-        /*int max_value = 299;
+        int number = atoi(lv_textarea_get_text(ta));
+        int max_value = 299;
         if(number > max_value) {
             char max_value_str[32];
             sprintf(max_value_str, "%d", max_value);
             lv_textarea_set_text(ta, max_value_str);
             return;
-        }*/
+        }
 
         // Actualizar la variable de página correspondiente al libro actual
         Book current_book = search_by_isbn(isbn_aux);
         current_book.current_page = number;
 
         char buffer[32];
-        //sprintf(buffer, "Página actual: %d", number);
+        sprintf(buffer, "Página actual: %d", number);
         lv_label_set_text(label, buffer);
 
         lv_obj_del(kb);
