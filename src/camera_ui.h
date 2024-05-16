@@ -33,9 +33,8 @@ public:
     String title;
     String author;
     String pages;
-    int currentPage;
 
-    Book(String title, String author, String pages) : title(title), author(author), pages(pages), currentPage(0) {}
+    Book(String title, String author, String pages) : title(title), author(author), pages(pages) {}
 };
 
 
