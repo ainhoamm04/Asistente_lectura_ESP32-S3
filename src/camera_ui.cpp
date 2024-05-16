@@ -170,9 +170,22 @@ void create_second_screen(lv_obj_t *padre) {
 
         // Muestra el teclado numérico
         show_numeric_keyboard(label4);
+    } else {
+        lv_obj_t * home_btn = lv_imgbtn_create(screen2);
+        lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
+
+        static lv_style_t style_btn_pressed;
+        lv_style_init(&style_btn_pressed);
+        lv_style_set_translate_y(&style_btn_pressed, 5);
+        lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
+
+        lv_obj_set_pos(home_btn, 75, 130); // Ajusta la posición según tus necesidades
+        lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
+        lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
     }
 
     // Botón de casa para volver a la pantalla principal
+    /*
     lv_obj_t * home_btn = lv_imgbtn_create(screen2);
     lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
 
@@ -184,6 +197,7 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_pos(home_btn, 75, 350); // Ajusta la posición según tus necesidades
     lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
     lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
+    */
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
@@ -315,6 +329,18 @@ static void keyboard_event_cb(lv_event_t * e) {
 
         lv_obj_del(kb);
         lv_obj_del(ta);
+
+        lv_obj_t * home_btn = lv_imgbtn_create(lv_scr_act());
+        lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
+
+        static lv_style_t style_btn_pressed;
+        lv_style_init(&style_btn_pressed);
+        lv_style_set_translate_y(&style_btn_pressed, 5);
+        lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
+
+        lv_obj_set_pos(home_btn, 75, 130); // Ajusta la posición según tus necesidades
+        lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
+        lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
     }
 }
 
