@@ -132,7 +132,7 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
             } else {
                 Serial.println("Book not found");
             }
-            go_to_screen2(e);
+            //go_to_screen2_tab2(e);
             create_camera_task();
         }
     }
@@ -178,27 +178,24 @@ void create_second_screen(lv_obj_t *padre) {
     if (book->title != "LIBRO NO ENCONTRADO") {
         // Crea una etiqueta para mostrar el número introducido por el usuario
         lv_obj_t * label4 = lv_label_create(screen2);
-        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
+        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 110);
         lv_label_set_text(label4, "¿En qué página te encuentras?");
         lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
 
-        // Muestra el teclado numérico
-        show_numeric_keyboard(label4);
-
         // Obtén el libro actual
         Book* current_book = search_by_isbn(get_book_number());
-
         // Crea una etiqueta para mostrar la página actual del libro
         lv_obj_t * label_current_page = lv_label_create(screen2);
         lv_obj_set_style_text_font(label_current_page, &ubuntu_regular_16, 0);
-        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 350); // Ajusta la posición según tus necesidades
-
+        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 85); // Ajusta la posición según tus necesidades
         // Convierte la página actual a string
         char current_page_str[32];
         sprintf(current_page_str, "%d", current_book->getCurrentPagde());
-
         // Establece el texto de la etiqueta al valor de la página actual del libro
-        lv_label_set_text_fmt(label_current_page, "Página actual: %s", current_page_str);
+        lv_label_set_text_fmt(label_current_page, "Página anterior: %s", current_page_str);
+
+        // Muestra el teclado numérico
+        show_numeric_keyboard(label4);
     } else {
         lv_obj_t * home_btn = lv_imgbtn_create(screen2);
         lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
@@ -230,10 +227,11 @@ void create_second_screen(lv_obj_t *padre) {
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
+/*
 static void go_to_screen2(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
     create_second_screen(main_screen);
-}
+}*/
 
 
 int camera_button_press_count = 0;
@@ -330,7 +328,7 @@ void show_numeric_keyboard(lv_obj_t * label) {
     // Crear un objeto textarea para almacenar el número introducido por el usuario
     lv_obj_t * ta = lv_textarea_create(lv_scr_act());
     lv_obj_set_size(ta, 100, 40); // Ajusta el tamaño según tus necesidades
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 110); // Ajusta la posición según tus necesidades
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 140); // Ajusta la posición según tus necesidades
 
     // Establecer el texto inicial del textarea a una cadena vacía
     lv_textarea_set_text(ta, "");
@@ -357,6 +355,7 @@ void show_numeric_keyboard(lv_obj_t * label) {
 
     /*Create a keyboard and add the new map as USER_1 mode*/
     lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
+    lv_obj_set_size(kb, 240, 130);
 
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_USER_1, kb_map, kb_ctrl);
     lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_USER_1);

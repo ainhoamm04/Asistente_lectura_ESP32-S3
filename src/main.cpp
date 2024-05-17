@@ -37,11 +37,11 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
 
 static void tab1_content(lv_obj_t * parent);
 void create_second_screen_tab1(lv_obj_t *padre);
-static void go_to_screen2_tab1(lv_event_t * e);
+void go_to_screen2_tab1(lv_event_t * e);
 
-static void tab2_content(lv_obj_t * parent);
+void tab2_content(lv_obj_t * parent);
 void create_second_screen_tab2(lv_obj_t *padre);
-static void go_to_screen2_tab2(lv_event_t * e);
+void go_to_screen2_tab2(lv_event_t * e);
 
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3(lv_obj_t *padre);
@@ -346,7 +346,7 @@ void create_second_screen_tab1(lv_obj_t *padre) {
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
-static void go_to_screen2_tab1(lv_event_t * e) {
+void go_to_screen2_tab1(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
     scr_principal = main_screen;
     create_second_screen_tab1(main_screen);
@@ -425,7 +425,7 @@ void tab2_content(lv_obj_t * parent) {
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
-static void go_to_screen2_tab2(lv_event_t * e) {
+void go_to_screen2_tab2(lv_event_t * e) {
     // Almacena el ISBN del libro seleccionado
     selected_isbn = (char*)lv_event_get_user_data(e);
 
