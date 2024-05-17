@@ -195,7 +195,7 @@ void create_second_screen(lv_obj_t *padre) {
 
         // Convierte la página actual a string
         char current_page_str[32];
-        sprintf(current_page_str, "%d", current_book->current_page);
+        sprintf(current_page_str, "%d", current_book->getCurrentPagde());
 
         // Establece el texto de la etiqueta al valor de la página actual del libro
         lv_label_set_text_fmt(label_current_page, "Página actual: %s", current_page_str);
@@ -389,7 +389,7 @@ static void keyboard_event_cb(lv_event_t * e) {
         }
 
         // Actualizar la variable de página correspondiente al libro actual
-        current_book->current_page = number;
+        current_book->setCurrentPage(number);
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);

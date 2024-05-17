@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoNvs.h>
 #include "display.h"
 #include <lvgl.h>
 #include <TFT_eSPI.h>
@@ -55,6 +56,7 @@ int reto_pag_mes = 300;
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
+    NVS.begin();
     //Serial.setDebugOutput(true);
 
     sdcard_init();

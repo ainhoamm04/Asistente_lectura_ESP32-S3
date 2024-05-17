@@ -3,6 +3,7 @@
 
 #include "lvgl.h"
 #include "Arduino.h"
+#include "ArduinoNvs.h"
 #include "esp_camera.h"
 
 extern camera_fb_t *fb;
@@ -34,11 +35,19 @@ public:
     String author;
     String pages;
     String isbn;
-    int current_page;
+    //int current_page;
     bool found; // Añade esta línea
 
-    Book(String title, String author, String pages, String isbn, int current_page, bool found = false)
-        : title(title), author(author), pages(pages), isbn(isbn), current_page(current_page), found(found) {}
+    Book(String title, String author, String pages, String isbn, bool found = false)
+        : title(title), author(author), pages(pages), isbn(isbn), found(found) {}
+
+    int getCurrentPagde() {
+        return NVS.getInt(isbn);
+    }
+
+    void setCurrentPage(int page) {
+        NVS.setInt(isbn, page);
+    }
 };
 
 // Crear los objetos Book de antemano
