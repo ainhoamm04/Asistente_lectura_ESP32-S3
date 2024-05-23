@@ -8,9 +8,32 @@
 #include "camera.h"
 #include "camera_ui.h"
 
-Display screen;
+#include <WiFi.h>
+#include <Firebase_ESP_Client.h>
+#define WIFI_SSID "vodafoneAAP8ZC"
+#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
+#define DATABASE_URL "https://asistente-lectura-esp32-s3-default-rtdb.europe-west1.firebasedatabase.app"
+#define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"
+#define USER_EMAIL "amm00384@red.ujaen.es"
+#define USER_PASSWORD "frbs_4"
+
+// Provide the token generation process info.
+#include <addons/TokenHelper.h>
+// Provide the RTDB payload printing info and other helper functions.
+#include <addons/RTDBHelper.h>
+
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
+// Define Firebase Data object
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+unsigned long sendDataPrevMillis = 0;
+unsigned long count = 0;
+bool signupOK = false;
+
+Display screen;
+
 lv_obj_t *scr_principal;
 
 void tab_function(void);
@@ -56,14 +79,50 @@ int reto_pag_mes = 300;
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
+
     NVS.begin();
-    //Serial.setDebugOutput(true);
 
     sdcard_init();
     camera_init();
     screen.init();
 
     tab_function();
+
+    //--------------------Configuración y conexión Firebase---------------------
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to Wi-Fi");
+    while (WiFi.status() != WL_CONNECTED){
+        Serial.print(".");
+        delay(300);
+    }
+    Serial.println("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+
+    Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
+
+    /* Assign the api key (required) */
+    config.api_key = API_KEY;
+    /* Assign the user sign in credentials */
+    auth.user.email = USER_EMAIL;
+    auth.user.password = USER_PASSWORD;
+    /* Assign the RTDB URL (required) */
+    config.database_url = DATABASE_URL;
+
+    /* Sign up */
+    if (Firebase.signUp(&config, &auth, "", "")){
+        Serial.println("ok");
+        signupOK = true;
+    }
+    else{
+        Serial.printf("%s\n", config.signer.signupError.message.c_str());
+    }
+
+    /* Assign the callback function for the long running token generation task */
+    config.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
+
+    Firebase.begin(&config, &auth);
+    Firebase.reconnectWiFi(true);
 }
 
 
@@ -71,6 +130,10 @@ void setup() {
 void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
+
+    if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)){
+        sendDataPrevMillis = millis();
+    }
 }
 
 
