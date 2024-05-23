@@ -132,6 +132,7 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
             } else {
                 Serial.println("Book not found");
             }
+            go_to_screen2(e);
             //go_to_screen2_tab2(e);
             create_camera_task();
         }
@@ -190,7 +191,7 @@ void create_second_screen(lv_obj_t *padre) {
         lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 85); // Ajusta la posición según tus necesidades
         // Convierte la página actual a string
         char current_page_str[32];
-        sprintf(current_page_str, "%d", current_book->getCurrentPagde());
+        sprintf(current_page_str, "%d", current_book->getCurrentPage());
         // Establece el texto de la etiqueta al valor de la página actual del libro
         lv_label_set_text_fmt(label_current_page, "Página anterior: %s", current_page_str);
 
@@ -205,7 +206,7 @@ void create_second_screen(lv_obj_t *padre) {
         lv_style_set_translate_y(&style_btn_pressed, 5);
         lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
 
-        lv_obj_set_pos(home_btn, 75, 130); // Ajusta la posición según tus necesidades
+        lv_obj_set_pos(home_btn, 75, 150); // Ajusta la posición según tus necesidades
         lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
         lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
     }
@@ -227,11 +228,11 @@ void create_second_screen(lv_obj_t *padre) {
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
-/*
+
 static void go_to_screen2(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
     create_second_screen(main_screen);
-}*/
+}
 
 
 int camera_button_press_count = 0;
@@ -405,7 +406,7 @@ static void keyboard_event_cb(lv_event_t * e) {
         lv_style_set_translate_y(&style_btn_pressed, 5);
         lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
 
-        lv_obj_set_pos(home_btn, 75, 130); // Ajusta la posición según tus necesidades
+        lv_obj_set_pos(home_btn, 75, 150); // Ajusta la posición según tus necesidades
         lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
         lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
     }

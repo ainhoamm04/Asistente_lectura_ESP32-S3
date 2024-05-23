@@ -98,7 +98,7 @@ void tab_function(void)
 
     lv_obj_set_style_radius(tab2, 4,0);
     lv_obj_set_style_bg_opa(tab2, LV_OPA_30, 0);
-    lv_obj_set_style_bg_color(tab2, lv_palette_lighten(LV_PALETTE_CYAN, 1), 0);
+    lv_obj_set_style_bg_color(tab2, lv_color_hex(0x6CE0FF), 0);
     lv_obj_set_style_border_width(tab2, 4, 0);
     lv_obj_set_style_border_color(tab2, lv_color_make(10, 154, 254), 0);
 
@@ -355,72 +355,53 @@ void go_to_screen2_tab1(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 2---------------------------------------------------
-/*
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
+    /*
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB1\x81\xAF");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
-
     create_button(parent, symbol, BUTTON_STYLE_BLUE, go_to_screen2_tab2, 75, 50);
+    */
 
-    struct Book {
-        const char* title;
-        const char* author;
-        const char* pages;
-    };
-
-    Book books[] = {
-            {"El valle de los lobos", "Autora Laura Gallego", "271 páginas"},
-            {"La maldición del maestro", "Autora Laura Gallego", "239 páginas"},
-            {"La llamada de los muertos", "Autora Laura Gallego", "239 páginas"},
-            {"Fenris, el elfo", "Autora Laura Gallego", "271 páginas"},
-            {"Invisible", "Autor Eloy Moreno", "299 páginas"}
-    };
-
-    for(int i = 0; i < sizeof(books)/sizeof(Book); i++) {
-        lv_obj_t *label_title = lv_label_create(parent);
-        lv_obj_set_style_text_font(label_title, &ubuntu_bold_16, 0);
-        lv_label_set_text(label_title, books[i].title);
-        lv_obj_align(label_title, LV_ALIGN_TOP_LEFT, 0, 120 + i*80);
-
-        lv_obj_t *label_author = lv_label_create(parent);
-        lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
-        lv_label_set_text(label_author, books[i].author);
-        lv_obj_align(label_author, LV_ALIGN_TOP_LEFT, 0, 140 + i*80);
-
-        lv_obj_t *label_pages = lv_label_create(parent);
-        lv_obj_set_style_text_font(label_pages, &ubuntu_italic_16, 0);
-        lv_label_set_text(label_pages, books[i].pages);
-        lv_obj_align(label_pages, LV_ALIGN_TOP_LEFT, 0, 160 + i*80);
-
-        if (i < sizeof(books)/sizeof(Book) - 1) { // No añadimos guiones después del último libro
-            lv_obj_t *label_separator = lv_label_create(parent);
-            lv_label_set_text(label_separator, "---------------------------------------");
-            lv_obj_align(label_separator, LV_ALIGN_TOP_LEFT, 0, 180 + i*80);
+    // Contar el número de libros que no son "LIBRO NO ENCONTRADO"
+    int num_books = 0;
+    for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
+        if (book_array[i].title != "LIBRO NO ENCONTRADO") {
+            num_books++;
         }
     }
-}*/
 
+    // Crear una lista
+    lv_obj_t * list = lv_list_create(parent);
+    int list_height = num_books * 40; // Ajustar la altura de la lista en función del número de libros
+    lv_obj_set_size(list, LV_HOR_RES, list_height);
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 50); // Alinear la lista
 
-// Variable global para almacenar el ISBN del libro seleccionado
-//String selected_isbn;
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0x6CE0FF)); // Fondo azul
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254)); // Borde azul
+    lv_style_set_radius(&style_blue, 1);
 
-void tab2_content(lv_obj_t * parent) {
-    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
 
     for(int i = 0; i < sizeof(book_array)/sizeof(Book); i++) {
-        // Solo crea la etiqueta y el botón si el libro ha sido encontrado
-        if(book_array[i].found) {
-            lv_obj_t *label = lv_label_create(parent);
-            lv_label_set_text(label, book_array[i].title.c_str());
-            lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-
-            // Añade la lógica para el evento de presionado
-            // Pasa el ISBN del libro como datos del usuario
-            create_button(parent, label, BUTTON_STYLE_BLUE_LARGE, go_to_screen2_tab2, 0, 50 + i*50);
+        // Si el título del libro es "Libro no encontrado", no lo añade a la lista
+        if (book_array[i].title == "LIBRO NO ENCONTRADO") {
+            continue;
         }
+
+        // Añadir un botón a la lista para cada libro
+        lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", book_array[i].title.c_str());
+        lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+
+        // Configurar el botón
+        lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+        lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+
+        lv_obj_set_style_bg_color(btn, lv_color_hex(0x6CE0FF), 0);
     }
 }
 

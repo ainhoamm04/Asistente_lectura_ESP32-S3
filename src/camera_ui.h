@@ -28,7 +28,7 @@ void setup_scr_camera(lvgl_camera_ui *ui);   //Parameter configuration function 
 void back_to_main_menu(lv_event_t * e);
 void go_to_screen2_tab2(lv_event_t * e);
 void create_second_screen(lv_obj_t *padre);
-//static void go_to_screen2(lv_event_t * e);
+static void go_to_screen2(lv_event_t * e);
 
 class Book {
 public:
@@ -42,7 +42,7 @@ public:
     Book(String title, String author, String pages, String isbn, bool found = false)
         : title(title), author(author), pages(pages), isbn(isbn), found(found) {}
 
-    int getCurrentPagde() {
+    int getCurrentPage() {
         return NVS.getInt(isbn);
     }
 
