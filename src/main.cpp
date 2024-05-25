@@ -10,12 +10,24 @@
 
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
-#define WIFI_SSID "vodafoneAAP8ZC"
-#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
-#define DATABASE_URL "https://asistente-lectura-esp32-s3-default-rtdb.europe-west1.firebasedatabase.app"
+#define DATABASE_URL "https://asistente-lectura-esp32-s3-default-rtdb.europe-west1.firebasedatabase.app/"
 #define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"
 #define USER_EMAIL "amm00384@red.ujaen.es"
 #define USER_PASSWORD "frbs_4"
+#define WIFI_SSID "vodafoneAAP8ZC"
+#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
+
+//#define WIFI_SSID "Xiaomi_Ainhoa"
+//#define WIFI_PASSWORD "cobw4192"
+
+//#define WIFI_SSID "telema2"
+//#define WIFI_PASSWORD "teleco2015"
+
+//#define WIFI_SSID "iPhone 12 LR"
+//#define WIFI_PASSWORD "teleco2015"
+
+#include <ArduinoJson.h> // Include the ArduinoJson library
+#include <FirebaseJson.h>
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
@@ -31,6 +43,7 @@ FirebaseConfig config;
 unsigned long sendDataPrevMillis = 0;
 unsigned long count = 0;
 bool signupOK = false;
+String path = "/libros";
 
 Display screen;
 
@@ -76,17 +89,13 @@ static void draw_event_cb(lv_event_t * e);
 int reto_pag_mes = 300;
 
 
+void prueba();
+
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
 
-    NVS.begin();
 
-    sdcard_init();
-    camera_init();
-    screen.init();
-
-    tab_function();
 
     //--------------------Configuración y conexión Firebase---------------------
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -111,7 +120,7 @@ void setup() {
 
     /* Sign up */
     if (Firebase.signUp(&config, &auth, "", "")){
-        Serial.println("ok");
+        Serial.println("SIGN UP CORRECT");
         signupOK = true;
     }
     else{
@@ -123,18 +132,271 @@ void setup() {
 
     Firebase.begin(&config, &auth);
     Firebase.reconnectWiFi(true);
+
+    //prueba();
+
+    NVS.begin();
+
+    sdcard_init();
+    camera_init();
+    screen.init();
+
+    tab_function();
 }
 
+bool libraryLoaded = false;
 
 //-------------------------------LOOP------------------------------------
 void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
 
-    if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)){
-        sendDataPrevMillis = millis();
+    //Firebase.ready();
+
+    /*
+    if (!libraryLoaded && Firebase.ready()) {
+        String title;
+        libraryLoaded = true;
+        Serial.println("\n\nHOLAAAAAA\n\n");
+
+        if (Firebase.RTDB.getString(&fbdo, "/libros/9788416588435/titulo")) {
+            Serial.println("HAS ENTRADO EN EL PATH DE LA TAB2");
+
+            if (fbdo.dataType() == "string") {
+                title = fbdo.stringData();
+                Serial.println(title);
+                Serial.println("DEBERIA DECIRTE EL TITULO DEL LIBRO");
+            } else {
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        }
+    }*/
+}
+
+
+
+
+void prueba(){
+    FirebaseJson json;       // or constructor with contents e.g. FirebaseJson json("{\"a\":true}");
+    FirebaseJsonArray arr;   // or constructor with contents e.g. FirebaseJsonArray arr("[1,2,true,\"test\"]");
+    FirebaseJsonData result; // object that keeps the deserializing result
+
+    // To set content
+    //json.setJsonData("{\"libros\":true}");
+
+    //arr.setJsonArrayData("[1,2,3]");
+
+    // To add data to json
+
+    // Set data to json
+
+
+// Set data to json
+;
+
+// Set data to json
+json.set("a", "que tal"); // Set "que tal" at path "a"
+json.set("b", 123); // Set 123 at path "b"
+json.set("c", "c"); // Set "c" at path "c"
+
+Firebase.RTDB.set(&fbdo, "/a/b/keyb", "new value b");
+Firebase.RTDB.set(&fbdo, "/a/d/keyd", "new value d");
+
+String keydValue;
+if (Firebase.RTDB.getString(&fbdo, "/a/d/keyd")) {
+    if (fbdo.dataType() == "string") {
+        keydValue = fbdo.stringData();
+        Serial.println(keydValue);
+    } else {
+        Serial.println("Error, no es un string");
+    }
+} else {
+    Serial.println("Error al obtener datos de Firebase");
+    Serial.println(fbdo.errorReason());
+}
+
+    // To add value to array
+    arr.add("hello").add("test").add(99); // or arr.add("hello", "test", 99);
+
+    // To add json into array
+    FirebaseJson json2("{\"d\":888,\"e\":false}");
+    arr.add(json2);
+
+    // To set the value at index
+    arr.set("[0]", 555); // or arr.set(0, 555);
+
+    // To set the value at specific path
+    arr.set("/[8]/i", 111);
+    arr.set("/[8]/j", 222);
+    arr.set("/[8]/k", "hi");
+
+    // To add/set array into json
+    json.set("x/y/z", arr);
+
+    // To serialize json to serial
+    json.toString(Serial, true /* prettify option */);
+
+    // To serialize array to string
+    String str;
+    arr.toString(str, true /* prettify option */);
+
+    Serial.println("\n---------");
+    Serial.println(str);
+
+    // To remove value from array at index or path
+    arr.remove("[6]/d" /* path */);
+    arr.remove(7 /* index */);
+    Serial.println("\n---------");
+    Serial.println(arr.raw()); // print raw string
+
+    // To remove value from json
+    json.remove("x/y/z/[6]");
+    Serial.println("\n---------");
+    Serial.println(json.raw()); // print raw string
+
+    // To get the value from json (deserializing)
+    json.get(result /* FirebaseJsonData */, "a/b/c" /* key or path */);
+
+    // To check the deserialized result and get its type and value
+    if (result.success)
+    {
+        Serial.println("\n---------");
+        if (result.type == "string") /* or result.typeNum == FirebaseJson::JSON_STRING */
+            Serial.println(result.to<String>().c_str());
+        else if (result.type == "int") /* or result.typeNum == FirebaseJson::JSON_INT */
+            Serial.println(result.to<int>());
+        else if (result.type == "float") /* or result.typeNum == FirebaseJson::JSON_FLOAT */
+            Serial.println(result.to<float>());
+        else if (result.type == "double") /* or result.typeNum == FirebaseJson::JSON_DOUBLE */
+            Serial.println(result.to<double>());
+        else if (result.type == "bool") /* or result.typeNum == FirebaseJson::JSON_BOOL */
+            Serial.println(result.to<bool>());
+        else if (result.type == "object") /* or result.typeNum == FirebaseJson::JSON_OBJECT */
+            Serial.println(result.to<String>().c_str());
+        else if (result.type == "array") /* or result.typeNum == FirebaseJson::JSON_ARRAY */
+            Serial.println(result.to<String>().c_str());
+        else if (result.type == "null") /* or result.typeNum == FirebaseJson::JSON_NULL */
+            Serial.println(result.to<String>().c_str());
+    }
+
+    // To get the json object from deserializing result
+    json.get(result /* FirebaseJsonData */, "x/y/z/[7]" /* key or path */);
+    if (result.success)
+    {
+
+        if (result.type == "object") /* or result.typeNum == FirebaseJson::JSON_OBJECT */
+        {
+            // Use result.get or result.getJSON instead of result.to
+            FirebaseJson json3;
+            result.get<FirebaseJson /* type e.g. FirebaseJson or FirebaseJsonArray */>(json3 /* object that used to store value */);
+            // or result.getJSON(json3);
+            Serial.println("\n---------");
+            json3.toString(Serial, true); // serialize contents to serial
+
+            // To iterate all values in Json object
+            size_t count = json3.iteratorBegin();
+            Serial.println("\n---------");
+            for (size_t i = 0; i < count; i++)
+            {
+                FirebaseJson::IteratorValue value = json3.valueAt(i);
+                Serial.printf("Name: %s, Value: %s, Type: %s\n", value.key.c_str(), value.value.c_str(), value.type == FirebaseJson::JSON_OBJECT ? "object" : "array");
+            }
+
+            Serial.println();
+            json3.iteratorEnd(); // required for free the used memory in iteration (node data collection)
+        }
+    }
+
+    // To get the json array object from deserializing result
+    json.get(result /* FirebaseJsonData */, "x/y/z" /* key or path */);
+    if (result.success)
+    {
+
+        if (result.type == "array") /* or result.typeNum == FirebaseJson::JSON_ARRAY */
+        {
+            // Use result.get or result.getJSON instead of result.to
+            FirebaseJsonArray arr2;
+            result.get<FirebaseJsonArray /* type e.g. FirebaseJson or FirebaseJsonArray */>(arr2 /* object that used to store value */);
+            // or result.getArray(arr2);
+            Serial.println("\n---------");
+            arr2.toString(Serial, true); // serialize contents to serial
+
+            // To iterate all values in Json array object
+            Serial.println("\n---------");
+            FirebaseJsonData result2;
+            for (size_t i = 0; i < arr2.size(); i++)
+            {
+                arr2.get(result2, i);
+                if (result2.type == "string" /* result2.typeNum == FirebaseJson::JSON_STRING */)
+                    Serial.printf("Array index %d, String Val: %s\n", i, result2.to<String>().c_str());
+                else if (result2.type == "int" /* result2.typeNum == FirebaseJson::JSON_INT */)
+                    Serial.printf("Array index %d, Int Val: %d\n", i, result2.to<int>());
+                else if (result2.type == "float" /* result2.typeNum == FirebaseJson::JSON_FLOAT */)
+                    Serial.printf("Array index %d, Float Val: %f\n", i, result2.to<float>());
+                else if (result2.type == "double" /* result2.typeNum == FirebaseJson::JSON_DOUBLE */)
+                    Serial.printf("Array index %d, Double Val: %f\n", i, result2.to<double>());
+                else if (result2.type == "bool" /* result2.typeNum == FirebaseJson::JSON_BOOL */)
+                    Serial.printf("Array index %d, Bool Val: %d\n", i, result2.to<bool>());
+                else if (result2.type == "object" /* result2.typeNum == FirebaseJson::JSON_OBJECT */)
+                    Serial.printf("Array index %d, Object Val: %s\n", i, result2.to<String>().c_str());
+                else if (result2.type == "array" /* result2.typeNum == FirebaseJson::JSON_ARRAY */)
+                    Serial.printf("Array index %d, Array Val: %s\n", i, result2.to<String>().c_str());
+                else if (result2.type == "null" /* result2.typeNum == FirebaseJson::JSON_NULL */)
+                    Serial.printf("Array index %d, Null Val: %s\n", i, result2.to<String>().c_str());
+            }
+
+            // Or use the same method as iterate the object
+            /*
+            size_t count = arr2.iteratorBegin();
+            Serial.println("\n---------");
+            for (size_t i = 0; i < count; i++)
+            {
+                FirebaseJson::IteratorValue value = arr2.valueAt(i);
+                Serial.printf("Name: %s, Value: %s, Type: %s\n", value.key.c_str(), value.value.c_str(), value.type == FirebaseJson::JSON_OBJECT ? "object" : "array");
+            }
+            */
+        }
     }
 }
+
+
+
+/*
+void prueba(){
+    if (Firebase.ready() && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0))
+    {
+        sendDataPrevMillis = millis();
+
+        FirebaseJson json;
+        json.setDoubleDigits(3);
+        json.add("value", count);
+
+        Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&fbdo, "/test/json", &json) ? "ok" : fbdo.errorReason().c_str());
+
+        Serial.printf("Get json... %s\n", Firebase.RTDB.getJSON(&fbdo, "/test/json") ? fbdo.to<FirebaseJson>().raw() : fbdo.errorReason().c_str());
+
+        FirebaseJson jVal;
+        Serial.printf("Get json ref... %s\n", Firebase.RTDB.getJSON(&fbdo, "/test/json", &jVal) ? jVal.raw() : fbdo.errorReason().c_str());
+
+        FirebaseJsonArray arr;
+        arr.setFloatDigits(2);
+        arr.setDoubleDigits(4);
+        arr.add("a", "b", "c", true, 45, (float)6.1432, 123.45692789);
+
+        Serial.printf("Set array... %s\n", Firebase.RTDB.setArray(&fbdo, "/test/array", &arr) ? "ok" : fbdo.errorReason().c_str());
+
+        Serial.printf("Get array... %s\n", Firebase.RTDB.getArray(&fbdo, "/test/array") ? fbdo.to<FirebaseJsonArray>().raw() : fbdo.errorReason().c_str());
+
+        Serial.printf("Push json... %s\n", Firebase.RTDB.pushJSON(&fbdo, "/test/push", &json) ? "ok" : fbdo.errorReason().c_str());
+
+        json.set("value", count + 0.29745);
+        Serial.printf("Update json... %s\n\n", Firebase.RTDB.updateNode(&fbdo, "/test/push/" + fbdo.pushName(), &json) ? "ok" : fbdo.errorReason().c_str());
+
+        count++;
+    }
+}*/
 
 
 //-------------------------DEFINICIÓN DE FUNCIONES------------------------------------
@@ -418,15 +680,381 @@ void go_to_screen2_tab1(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 2---------------------------------------------------
+String title;
+/*
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
-    /*
-    lv_obj_t * symbol = lv_label_create(parent);
-    lv_label_set_text(symbol, "\xF3\xB1\x81\xAF");
-    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
-    create_button(parent, symbol, BUTTON_STYLE_BLUE, go_to_screen2_tab2, 75, 50);
-    */
+    // Create a list
+    lv_obj_t * list = lv_list_create(parent);
+    lv_obj_set_size(list, LV_HOR_RES, LV_VER_RES - 50); // Adjust the height of the list to the height of the screen minus 50
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 50); // Align the list
+
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0x6CE0FF)); // Blue background
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254)); // Blue border
+    lv_style_set_radius(&style_blue, 1);
+
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    Serial.println("HAS ENTRADO EN LA TAB2");
+
+    //prueba();
+
+    // Get the data from the database
+        if (!libraryLoaded && Firebase.ready()) {
+        String title;
+        libraryLoaded = true;
+        Serial.println("\n\nHOLAAAAAA\n\n");
+
+        if (Firebase.RTDB.getString(&fbdo, "/libros/9788416588435/titulo")) {
+            Serial.println("HAS ENTRADO EN EL PATH DE LA TAB2");
+
+            if (fbdo.dataType() == "string") {
+                title = fbdo.stringData();
+                Serial.println(title);
+                Serial.println("DEBERIA DECIRTE EL TITULO DEL LIBRO");
+            } else {
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        }
+    } else {
+            // There was an error in the request, you can access the error message
+            Serial.println("Failed to retrieve data.");
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+}*/
+
+/*
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Create a list
+    lv_obj_t * list = lv_list_create(parent);
+    int num_books = 5;
+    int list_height = num_books * 40; // Ajustar la altura de la lista en función del número de libros
+    lv_obj_set_size(list, LV_HOR_RES, list_height);
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65); // Align the list
+
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0x6CE0FF)); // Blue background
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254)); // Blue border
+    lv_style_set_radius(&style_blue, 1);
+
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+
+    String title1;
+    if (Firebase.RTDB.getString(&fbdo, "/libros/9788416588435/titulo")) {
+        if (fbdo.dataType() == "string") {
+            title1 = fbdo.stringData();
+            Serial.println("\n\n" + title1 + "\n\n");
+        } else {
+            Serial.println("Error, no es un string");
+        }
+    } else {
+        Serial.println("Error al obtener datos de Firebase");
+        Serial.println(fbdo.errorReason());
+    }
+    // Añadir un botón a la lista para cada libro
+    lv_obj_t * btn1 = lv_list_add_btn(list, "\xEE\xB7\xA2", title1.c_str());
+    lv_obj_set_style_text_font(btn1, &ubuntu_regular_16, 0);
+    // Configurar el botón
+    lv_obj_set_style_text_font(btn1, &ubuntu_regular_16, 0);
+    lv_obj_set_style_text_color(btn1, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(btn1, lv_color_hex(0x6CE0FF), 0);
+
+
+    String title2;
+    if (Firebase.RTDB.getString(&fbdo, "/libros/9788467539677/titulo")) {
+        if (fbdo.dataType() == "string") {
+            title2 = fbdo.stringData();
+            Serial.println("\n\n" + title2 + "\n\n");
+        } else {
+            Serial.println("Error, no es un string");
+        }
+    } else {
+        Serial.println("Error al obtener datos de Firebase");
+        Serial.println(fbdo.errorReason());
+    }
+    // Añadir un botón a la lista para cada libro
+    lv_obj_t * btn2 = lv_list_add_btn(list, "\xEE\xB7\xA2", title2.c_str());
+    lv_obj_set_style_text_font(btn2, &ubuntu_regular_16, 0);
+    // Configurar el botón
+    lv_obj_set_style_text_font(btn2, &ubuntu_regular_16, 0);
+    lv_obj_set_style_text_color(btn2, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(btn2, lv_color_hex(0x6CE0FF), 0);
+
+
+
+    String title3;
+    if (Firebase.RTDB.getString(&fbdo, "/libros/9788467539684/titulo")) {
+        if (fbdo.dataType() == "string") {
+            title3 = fbdo.stringData();
+            Serial.println("\n\n" + title3 + "\n\n");
+        } else {
+            Serial.println("Error, no es un string");
+        }
+    } else {
+        Serial.println("Error al obtener datos de Firebase");
+        Serial.println(fbdo.errorReason());
+    }
+    // Añadir un botón a la lista para cada libro
+    lv_obj_t * btn3 = lv_list_add_btn(list, "\xEE\xB7\xA2", title3.c_str());
+    lv_obj_set_style_text_font(btn3, &ubuntu_regular_16, 0);
+    // Configurar el botón
+    lv_obj_set_style_text_font(btn3, &ubuntu_regular_16, 0);
+    lv_obj_set_style_text_color(btn3, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(btn3, lv_color_hex(0x6CE0FF), 0);
+
+
+
+    String title4;
+    if (Firebase.RTDB.getString(&fbdo, "/libros/9788467539691/titulo")) {
+        if (fbdo.dataType() == "string") {
+            title4 = fbdo.stringData();
+            Serial.println("\n\n" + title4 + "\n\n");
+        } else {
+            Serial.println("Error, no es un string");
+        }
+    } else {
+        Serial.println("Error al obtener datos de Firebase");
+        Serial.println(fbdo.errorReason());
+    }
+    // Añadir un botón a la lista para cada libro
+    lv_obj_t * btn4 = lv_list_add_btn(list, "\xEE\xB7\xA2", title4.c_str());
+    lv_obj_set_style_text_font(btn4, &ubuntu_regular_16, 0);
+    // Configurar el botón
+    lv_obj_set_style_text_font(btn4, &ubuntu_regular_16, 0);
+    lv_obj_set_style_text_color(btn4, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(btn4, lv_color_hex(0x6CE0FF), 0);
+
+
+
+    String title5;
+    if (Firebase.RTDB.getString(&fbdo, "/libros/9788467539707/titulo")) {
+        if (fbdo.dataType() == "string") {
+            title5 = fbdo.stringData();
+            Serial.println("\n\n" + title5 + "\n\n");
+        } else {
+            Serial.println("Error, no es un string");
+        }
+    } else {
+        Serial.println("Error al obtener datos de Firebase");
+        Serial.println(fbdo.errorReason());
+    }
+    // Añadir un botón a la lista para cada libro
+    lv_obj_t * btn5 = lv_list_add_btn(list, "\xEE\xB7\xA2", title5.c_str());
+    lv_obj_set_style_text_font(btn5, &ubuntu_regular_16, 0);
+    // Configurar el botón
+    lv_obj_set_style_text_font(btn5, &ubuntu_regular_16, 0);
+    lv_obj_set_style_text_color(btn5, lv_color_black(), 0);
+    lv_obj_set_style_bg_color(btn5, lv_color_hex(0x6CE0FF), 0);
+
+}*/
+
+/*
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Create a list
+    lv_obj_t * list = lv_list_create(parent);
+    lv_obj_set_size(list, LV_HOR_RES, LV_VER_RES - 50); // Adjust the height of the list to the height of the screen minus 50
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 50); // Align the list
+
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0x6CE0FF)); // Blue background
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254)); // Blue border
+    lv_style_set_radius(&style_blue, 1);
+
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    Serial.println("HAS ENTRADO EN LA TAB2");
+
+    // Get the data from the database
+    if (!libraryLoaded && Firebase.ready()) {
+        libraryLoaded = true;
+        Serial.println("\n\nHOLAAAAAA\n\n");
+
+        if (Firebase.RTDB.get(&fbdo, "/libros")) {
+            if (fbdo.dataType() == "json") {
+                FirebaseJson* json = fbdo.jsonObjectPtr(); // Get the JSON object
+                String jsonString;
+                json->toString(jsonString); // Convert the FirebaseJson to a String
+
+                DynamicJsonDocument doc(1024);
+                deserializeJson(doc, jsonString); // Parse the JSON string
+
+                for(JsonPair kv : doc.as<JsonObject>()) {
+                    String title = kv.value()["titulo"].as<String>();
+                    Serial.println(title);
+
+                    // Add a button to the list for each book
+                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
+                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                    // Configure the button
+                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+                    lv_obj_set_style_bg_color(btn, lv_color_hex(0x6CE0FF), 0);
+                }
+            } else {
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        } else {
+            Serial.println("Failed to retrieve data.");
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+    }
+}*/
+
+/*
+void tab2_content(lv_obj_t * parent) {
+    // Crea un título en la pantalla con el texto "MIS LIBROS" y un estilo de color azul
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Crea una lista en la pantalla
+    lv_obj_t * list = lv_list_create(parent);
+    int num_books = 5;
+    int list_height = num_books * 40; // Ajustar la altura de la lista en función del número de libros
+    lv_obj_set_size(list, LV_HOR_RES, list_height);
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65); // Align the list
+
+    // Inicializa un estilo con color de fondo azul, borde azul y radio 1
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0x6CE0FF));
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
+    lv_style_set_radius(&style_blue, 1);
+
+    // Aplica el estilo a la lista
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    // Imprime un mensaje en la consola
+    Serial.println("HAS ENTRADO EN LA TAB2");
+
+    // Si la biblioteca Firebase está lista y no se ha cargado aún
+    if (!libraryLoaded && Firebase.ready()) {
+        // Marca la biblioteca como cargada
+        libraryLoaded = true;
+        // Imprime un mensaje en la consola
+        Serial.println("\n\nHOLAAAAAA\n\n");
+
+        // Intenta obtener los datos de la base de datos en Firebase
+        if (Firebase.RTDB.get(&fbdo, "/libros")) {
+            // Si los datos obtenidos son de tipo JSON
+            if (fbdo.dataType() == "json") {
+                // Obtiene el objeto JSON
+                FirebaseJson* json = fbdo.jsonObjectPtr();
+                // Convierte el objeto JSON a una cadena
+                String jsonString;
+                json->toString(jsonString);
+
+                // Crea un documento JSON y parsea la cadena JSON
+                DynamicJsonDocument doc(1024);
+                deserializeJson(doc, jsonString);
+
+                // Itera sobre cada par clave-valor en el objeto JSON
+                for(JsonPair kv : doc.as<JsonObject>()) {
+                    // Obtiene el título del libro
+                    String title = kv.value()["titulo"].as<String>();
+                    // Imprime el título en la consola
+                    Serial.println(title);
+
+                    // Añade un botón a la lista para cada libro
+                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
+                    // Configura el botón con un estilo de texto y color de fondo
+                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+                    lv_obj_set_style_bg_color(btn, lv_color_hex(0x6CE0FF), 0);
+                }
+            } else {
+                // Si los datos obtenidos no son de tipo JSON, imprime un mensaje de error en la consola
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        } else {
+            // Si falla al obtener los datos, imprime un mensaje de error en la consola
+            Serial.println("Failed to retrieve data.");
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+    }
+}*/
+
+
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Crea una lista en la pantalla
+    lv_obj_t * list = lv_list_create(parent);
+
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0xCBECFF));
+    lv_style_set_border_width(&style_blue, 0);
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
+    lv_style_set_radius(&style_blue, 1);
+
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    if (!libraryLoaded && Firebase.ready()) {
+        libraryLoaded = true;
+
+        if (Firebase.RTDB.get(&fbdo, "/libros")) {
+            if (fbdo.dataType() == "json") {
+                FirebaseJson* json = fbdo.jsonObjectPtr();
+                String jsonString;
+                json->toString(jsonString);
+
+                DynamicJsonDocument doc(1024);
+                deserializeJson(doc, jsonString);
+
+                // Obtiene el número total de libros antes de entrar en el bucle
+                int num_books = doc.as<JsonObject>().size();
+                int list_height = num_books * 40;
+                lv_obj_set_size(list, 230, list_height);
+                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65);
+
+                for(JsonPair kv : doc.as<JsonObject>()) {
+                    String title = kv.value()["titulo"].as<String>();
+                    Serial.println(title);
+
+                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
+                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+                    lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
+                }
+            } else {
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        } else {
+            Serial.println("Failed to retrieve data.");
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+    }
+}
+
+
+
+/*
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+
+    //lv_obj_t * symbol = lv_label_create(parent);
+    //lv_label_set_text(symbol, "\xF3\xB1\x81\xAF");
+    //lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+    //create_button(parent, symbol, BUTTON_STYLE_BLUE, go_to_screen2_tab2, 75, 50);
+
 
     // Contar el número de libros que no son "LIBRO NO ENCONTRADO"
     int num_books = 0;
@@ -466,7 +1094,7 @@ void tab2_content(lv_obj_t * parent) {
 
         lv_obj_set_style_bg_color(btn, lv_color_hex(0x6CE0FF), 0);
     }
-}
+}*/
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
 void go_to_screen2_tab2(lv_event_t * e) {
