@@ -76,8 +76,9 @@ void create_second_screen_tab1(lv_obj_t *padre);
 void go_to_screen2_tab1(lv_event_t * e);
 
 void tab2_content(lv_obj_t * parent);
-void create_second_screen_tab2(lv_obj_t *padre);
-void go_to_screen2_tab2(lv_event_t * e);
+void book_button_event_handler(lv_event_t * e);
+void create_second_screen_tab2(lv_obj_t *padre, const String& bookTitle, const String& author, int totalPage, int currentPage);
+void go_to_screen2_tab2(lv_event_t * e, const char* title);
 
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3(lv_obj_t *padre);
@@ -989,62 +990,6 @@ void tab2_content(lv_obj_t * parent) {
 }*/
 
 
-void tab2_content(lv_obj_t * parent) {
-    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
-
-    // Crea una lista en la pantalla
-    lv_obj_t * list = lv_list_create(parent);
-
-    static lv_style_t style_blue;
-    lv_style_init(&style_blue);
-    lv_style_set_bg_color(&style_blue, lv_color_hex(0xCBECFF));
-    lv_style_set_border_width(&style_blue, 0);
-    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
-    lv_style_set_radius(&style_blue, 1);
-
-    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
-
-    if (!libraryLoaded && Firebase.ready()) {
-        libraryLoaded = true;
-
-        if (Firebase.RTDB.get(&fbdo, "/libros")) {
-            if (fbdo.dataType() == "json") {
-                FirebaseJson* json = fbdo.jsonObjectPtr();
-                String jsonString;
-                json->toString(jsonString);
-
-                DynamicJsonDocument doc(1024);
-                deserializeJson(doc, jsonString);
-
-                // Obtiene el número total de libros antes de entrar en el bucle
-                int num_books = doc.as<JsonObject>().size();
-                int list_height = num_books * 40;
-                lv_obj_set_size(list, 230, list_height);
-                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65);
-
-                for(JsonPair kv : doc.as<JsonObject>()) {
-                    String title = kv.value()["titulo"].as<String>();
-                    Serial.println(title);
-
-                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
-                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                    lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                }
-            } else {
-                Serial.println(fbdo.errorReason());
-                Serial.println(fbdo.dataType());
-                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
-            }
-        } else {
-            Serial.println("Failed to retrieve data.");
-            Serial.println("Error reason: " + String(fbdo.errorReason()));
-        }
-    }
-}
-
-
-
 /*
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
@@ -1096,40 +1041,120 @@ void tab2_content(lv_obj_t * parent) {
     }
 }*/
 
-// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
-void go_to_screen2_tab2(lv_event_t * e) {
-    // Almacena el ISBN del libro seleccionado
-    selected_isbn = (char*)lv_event_get_user_data(e);
 
-    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
-    scr_principal = main_screen;
-    create_second_screen_tab2(main_screen);
+
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Crea una lista en la pantalla
+    lv_obj_t * list = lv_list_create(parent);
+
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0xCBECFF));
+    lv_style_set_border_width(&style_blue, 0);
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
+    lv_style_set_radius(&style_blue, 1);
+
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    if (!libraryLoaded && Firebase.ready()) {
+        libraryLoaded = true;
+
+        if (Firebase.RTDB.get(&fbdo, "/libros")) {
+            if (fbdo.dataType() == "json") {
+                FirebaseJson* json = fbdo.jsonObjectPtr();
+                String jsonString;
+                json->toString(jsonString);
+
+                DynamicJsonDocument doc(1024);
+                deserializeJson(doc, jsonString);
+
+                // Obtiene el número total de libros antes de entrar en el bucle
+                int num_books = doc.as<JsonObject>().size();
+                int list_height = num_books * 40;
+                lv_obj_set_size(list, 230, list_height);
+                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65);
+
+                for(JsonPair kv : doc.as<JsonObject>()) {
+                    String title = kv.value()["titulo"].as<String>();
+                    Serial.println(title);
+
+                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
+                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+                    lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
+                    lv_obj_add_event_cb(btn, book_button_event_handler, LV_EVENT_CLICKED, NULL);
+                }
+            } else {
+                Serial.println(fbdo.errorReason());
+                Serial.println(fbdo.dataType());
+                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+            }
+        } else {
+            Serial.println("Failed to retrieve data.");
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+    }
 }
 
-void create_second_screen_tab2(lv_obj_t *padre) {
+// Manejador de eventos para los botones de la lista de libros
+void book_button_event_handler(lv_event_t * e) {
+    lv_obj_t * btn = lv_event_get_target(e); // Get the button object
+    lv_obj_t * label = lv_obj_get_child(btn, NULL); // Get the label from the button
+    const char* title = lv_label_get_text(label); // Get the text from the label
+    go_to_screen2_tab2(e, title);
+}
+
+
+
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
+void go_to_screen2_tab2(lv_event_t * e, const char* title) {
+    // Load the book information from Firebase
+    String path = "/libros/" + String(title);
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        FirebaseJson* json = fbdo.jsonObjectPtr();
+        FirebaseJsonData jsonData;
+
+        json->get(jsonData, "/autor");
+        String author = jsonData.stringValue;
+
+        json->get(jsonData, "/pagina_total");
+        int totalPage = jsonData.intValue;
+
+        json->get(jsonData, "/pagina_actual");
+        int currentPage = jsonData.intValue;
+
+        create_second_screen_tab2(lv_event_get_current_target(e), title, author.c_str(), totalPage, currentPage);
+    } else {
+        // Handle the error
+    }
+}
+
+void create_second_screen_tab2(lv_obj_t *padre, const String& bookTitle, const String& author, int totalPage, int currentPage) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0x9DE4FF), 0);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
     lv_scr_load(screen2);
 
-    // Busca el libro con el ISBN seleccionado
-    Book* selected_book = search_by_isbn(selected_isbn);
-
-    // Muestra la información del libro seleccionado
-    // (Asegúrate de reemplazar esto con tu propio código para mostrar la información del libro)
+    // Muestra la información del libro
+    String bookData = "Titulo: " + bookTitle + "\nAutor: " + author + "\nPagina Total: " + String(totalPage) + "\nPagina Actual: " + String(currentPage);
     lv_obj_t * label = lv_label_create(screen2);
-    const char* title = selected_book->title.c_str();
-    const char* author = selected_book->author.c_str();
-    int pages = selected_book->pages.toInt();
-
-    lv_label_set_text_fmt(label, "Título: %s\nAutor: %s\nPáginas: %d", title, author, pages);
+    lv_label_set_text(label, bookData.c_str());
+    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
 
+    // Crea el botón para volver a la pantalla principal
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+    create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 510);
 
-    create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 110);
+    lv_obj_t * space = lv_label_create(screen2);
+    lv_label_set_text(space, "\n\n\n");
+    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 510);
 }
 
 
