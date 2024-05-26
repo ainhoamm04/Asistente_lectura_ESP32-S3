@@ -1041,7 +1041,7 @@ void tab2_content(lv_obj_t * parent) {
     }
 }*/
 
-
+//std::vector<std::string> keys; // Vector para almacenar las claves
 
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
@@ -1077,14 +1077,18 @@ void tab2_content(lv_obj_t * parent) {
                 lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65);
 
                 for(JsonPair kv : doc.as<JsonObject>()) {
+                    String key = kv.key().c_str();
+                    char* keyCopy = new char[key.length() + 1]; // Crear un nuevo array de caracteres en la memoria dinámica
+                    strcpy(keyCopy, key.c_str()); // Copiar la clave en el nuevo array de caracteres
+                    //keys.push_back(std::string(key.c_str())); // Convert Arduino String to std::string
+
                     String title = kv.value()["titulo"].as<String>();
-                    Serial.println(title);
 
                     lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
                     lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
                     lv_obj_set_style_text_color(btn, lv_color_black(), 0);
                     lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                    lv_obj_add_event_cb(btn, book_button_event_handler, LV_EVENT_CLICKED, NULL);
+                    lv_obj_add_event_cb(btn, book_button_event_handler, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
                 }
             } else {
                 Serial.println(fbdo.errorReason());
@@ -1098,13 +1102,187 @@ void tab2_content(lv_obj_t * parent) {
     }
 }
 
-// Manejador de eventos para los botones de la lista de libros
+
+/*
 void book_button_event_handler(lv_event_t * e) {
-    lv_obj_t * btn = lv_event_get_target(e); // Get the button object
-    lv_obj_t * label = lv_obj_get_child(btn, NULL); // Get the label from the button
-    const char* title = lv_label_get_text(label); // Get the text from the label
-    go_to_screen2_tab2(e, title);
+    // Get the button that was clicked
+    //lv_obj_t * btn = lv_event_get_target(e);
+
+    // Get the key of the book from the button
+    String key = String((char*)lv_event_get_user_data(e));
+
+    // Search the database for the details of the book with the given key
+    String path = "/libros/" + key;
+    Serial.println("\nAttempting to retrieve data from path: " + path);
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            Serial.println("\n"+fbdo.dataType()+"\n");
+            DynamicJsonDocument doc(1024);
+
+            String jsonData = fbdo.jsonData().stringValue;
+
+            char jsonChar[jsonData.length() + 1];
+            jsonData.toCharArray(jsonChar, sizeof(jsonChar));
+            DeserializationError err = deserializeJson(doc, jsonChar);
+
+            if (err) {
+                Serial.print(F("deserializeJson() failed with code "));
+                Serial.println(err.c_str());
+                return;
+            }
+
+            String bookTitle = doc["titulo"];
+            String author = doc["autor"];
+            int totalPage = doc["paginas_total"];
+            int currentPage = doc["pagina_actual"];
+
+            // Print the details to the serial console
+            Serial.println("Titulo: " + bookTitle);
+            Serial.println("Autor: " + author);
+            Serial.println("Paginas totales: " + String(totalPage));
+            Serial.println("Pagina actual: " + String(currentPage));
+        } else {
+            Serial.println("\nFailed to retrieve data. Data type is not JSON\n");
+            Serial.println("Failed to retrieve data from path: " + path);
+            Serial.println("Error reason: " + String(fbdo.errorReason()));
+        }
+    } else {
+        Serial.println("\nFailed to retrieve data from Firebase\n");
+    }
+}*/
+
+/*
+void book_button_event_handler(lv_event_t * e) {
+    // Obtener la clave del libro desde el botón
+    const char* key = (const char*)lv_event_get_user_data(e);
+
+    // Construir la ruta específica de los datos del libro
+    String path = "/libros/" + String(key);
+    Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            Serial.println("\nTipo de datos: JSON\n");
+            DynamicJsonDocument doc(1024);
+
+            String jsonData = fbdo.jsonData().stringValue;
+
+            // Imprimir los datos recuperados de Firebase
+            Serial.println("Datos recuperados de Firebase: " + jsonData);
+
+            if (jsonData.length() > 0) { // Comprobar si los datos no están vacíos
+                char jsonChar[jsonData.length() + 1];
+                jsonData.toCharArray(jsonChar, sizeof(jsonChar));
+                DeserializationError err = deserializeJson(doc, jsonChar);
+
+                if (err) {
+                    Serial.print(F("deserializeJson() falló con el código "));
+                    Serial.println(err.c_str());
+                    return;
+                }
+
+                // Guardar todo el objeto del libro para acceder a él más tarde
+                JsonObject bookObject = doc.as<JsonObject>();
+
+                // Extraer e imprimir datos específicos del libro
+                String bookTitle = bookObject["titulo"];
+                String author = bookObject["autor"];
+                int totalPage = bookObject["paginas_total"];
+                int currentPage = bookObject["pagina_actual"];
+
+                // Aquí puedes continuar con el resto de tu código...
+            } else {
+                Serial.println("No hay datos disponibles en la ruta dada.");
+            }
+        } else {
+            Serial.println("Los datos recuperados no son de tipo JSON.");
+        }
+    } else {
+        Serial.println("Falló al recuperar datos de Firebase.");
+    }
+}*/
+
+
+void book_button_event_handler(lv_event_t * e) {
+    // Obtener la clave del libro desde el evento
+    std::string key = std::string(static_cast<char*>(lv_event_get_user_data(e)));
+
+    // Construir la ruta específica de los datos del libro
+    String path = "/libros/" + String(key.c_str());
+    Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            Serial.println("\nTipo de datos: JSON\n");
+            DynamicJsonDocument doc(1024);
+
+            String jsonData = fbdo.jsonData().stringValue;
+
+            // Imprimir los datos recuperados de Firebase
+            Serial.println("Datos recuperados de Firebase: " + jsonData);
+
+            if (jsonData.length() > 0) { // Comprobar si los datos no están vacíos
+                char jsonChar[jsonData.length() + 1];
+                jsonData.toCharArray(jsonChar, sizeof(jsonChar));
+                DeserializationError err = deserializeJson(doc, jsonChar);
+
+                if (err) {
+                    Serial.print(F("deserializeJson() falló con el código "));
+                    Serial.println(err.c_str());
+                    return;
+                }
+
+                // Guardar todo el objeto del libro para acceder a él más tarde
+                JsonObject bookObject = doc.as<JsonObject>();
+
+                // Extraer e imprimir datos específicos del libro
+                String bookTitle = bookObject["titulo"];
+                String author = bookObject["autor"];
+                int totalPage = bookObject["paginas_total"];
+                int currentPage = bookObject["pagina_actual"];
+
+                // Aquí puedes continuar con el resto de tu código...
+            } else {
+                Serial.println("No hay datos disponibles en la ruta dada.");
+            }
+        } else {
+            Serial.println("Los datos recuperados no son de tipo JSON.");
+        }
+    } else {
+        Serial.println("Falló al recuperar datos de Firebase.");
+    }
 }
+
+
+// Manejador de eventos para los botones de la lista de libros
+/*
+void book_button_event_handler(lv_event_t * e) {
+    // Get the button that was clicked
+    lv_obj_t * btn = lv_event_get_target(e);
+
+    // Get the key of the book from the button
+    String key = (char*)lv_event_get_user_data(e);
+
+    // Search the database for the details of the book with the given key
+    String path = "/libros/" + key;
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            DynamicJsonDocument doc(1024);
+            //deserializeJson(doc, fbdo.jsonData());
+
+            //String jsonData = fbdo.jsonData();
+            char jsonChar[jsonData.length() + 1];
+            jsonData.toCharArray(jsonChar, sizeof(jsonChar));
+            deserializeJson(doc, jsonChar);
+
+            String bookTitle = doc["titulo"];
+            String author = doc["autor"];
+            int totalPage = doc["paginas_total"];
+            int currentPage = doc["pagina_actual"];
+            create_second_screen_tab2(parent, bookTitle, author, totalPage, currentPage);
+        }
+    }
+}*/
 
 
 
