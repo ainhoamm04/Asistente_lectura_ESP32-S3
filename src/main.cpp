@@ -1218,6 +1218,134 @@ void book_button_event_handler(lv_event_t * e) {
 
             String jsonData = fbdo.jsonData().stringValue;
 
+            String pathtitle = "/libros/" + String(key.c_str()) + "/titulo";
+            String pathauthor = "/libros/" + String(key.c_str()) + "/autor";
+            String pathtotalpages = "/libros/" + String(key.c_str()) + "/paginas_total";
+            String pathcurrentpage = "/libros/" + String(key.c_str()) + "/pagina_actual";
+
+            if (Firebase.RTDB.getString(&fbdo, pathtitle.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String titulo = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getString(&fbdo, pathauthor.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String autor = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathtotalpages.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int paginas_total = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathcurrentpage.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int pagina_actual = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+
+
+        } else {
+            Serial.println("Los datos recuperados no son de tipo JSON.");
+        }
+    } else {
+        Serial.println("Fallo al recuperar datos de Firebase.");
+    }
+}
+
+/*
+void book_button_event_handler(lv_event_t * e) {
+    // Obtener la clave del libro desde el evento
+    std::string key = std::string(static_cast<char*>(lv_event_get_user_data(e)));
+
+    // Construir la ruta específica de los datos del libro
+    String path = "/libros/" + String(key.c_str());
+    Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            Serial.println("\nTipo de datos: JSON\n");
+            DynamicJsonDocument doc(1024);
+
+            String jsonData = fbdo.jsonData().stringValue;
+
+            String pathtitle = "/libros/" + String(key.c_str()) + "/titulo";
+            String pathauthor = "/libros/" + String(key.c_str()) + "/autor";
+            String pathtotalpages = "/libros/" + String(key.c_str()) + "/paginas_total";
+            String pathcurrentpage = "/libros/" + String(key.c_str()) + "/pagina_actual";
+
+            if (Firebase.RTDB.getString(&fbdo, pathtitle.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String titulo = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getString(&fbdo, pathauthor.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String autor = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathtotalpages.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int paginas_total = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathcurrentpage.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int pagina_actual = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+
+
+
+
             // Imprimir los datos recuperados de Firebase
             Serial.println("Datos recuperados de Firebase: " + jsonData);
 
@@ -1232,14 +1360,14 @@ void book_button_event_handler(lv_event_t * e) {
                     return;
                 }
 
-                // Guardar todo el objeto del libro para acceder a él más tarde
+                // Guardar el objeto del libro para acceder a él más tarde
                 JsonObject bookObject = doc.as<JsonObject>();
 
                 // Extraer e imprimir datos específicos del libro
-                String bookTitle = bookObject["titulo"];
-                String author = bookObject["autor"];
-                int totalPage = bookObject["paginas_total"];
-                int currentPage = bookObject["pagina_actual"];
+                //String bookTitle = bookObject["titulo"];
+                //String author = bookObject["autor"];
+                //int totalPage = bookObject["paginas_total"];
+                //int currentPage = bookObject["pagina_actual"];
 
                 // Aquí puedes continuar con el resto de tu código...
             } else {
@@ -1249,9 +1377,9 @@ void book_button_event_handler(lv_event_t * e) {
             Serial.println("Los datos recuperados no son de tipo JSON.");
         }
     } else {
-        Serial.println("Falló al recuperar datos de Firebase.");
+        Serial.println("Fallo al recuperar datos de Firebase.");
     }
-}
+}*/
 
 
 // Manejador de eventos para los botones de la lista de libros
