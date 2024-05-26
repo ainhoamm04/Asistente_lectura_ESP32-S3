@@ -77,8 +77,8 @@ void go_to_screen2_tab1(lv_event_t * e);
 
 void tab2_content(lv_obj_t * parent);
 void book_button_event_handler(lv_event_t * e);
-void create_second_screen_tab2(lv_obj_t *padre, const String& bookTitle, const String& author, int totalPage, int currentPage);
-void go_to_screen2_tab2(lv_event_t * e, const char* title);
+void create_second_screen_tab2(lv_obj_t * parent, const std::string& key);
+void go_to_screen2_tab2(lv_event_t * e);
 
 void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3(lv_obj_t *padre);
@@ -1088,7 +1088,7 @@ void tab2_content(lv_obj_t * parent) {
                     lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
                     lv_obj_set_style_text_color(btn, lv_color_black(), 0);
                     lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                    lv_obj_add_event_cb(btn, book_button_event_handler, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
+                    lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
                 }
             } else {
                 Serial.println(fbdo.errorReason());
@@ -1317,13 +1317,11 @@ void book_button_event_handler(lv_event_t * e) {
             }
 
             // Crea un botón para volver a la pantalla principal
-            lv_obj_t * btn_back = lv_btn_create(new_screen);
-            lv_obj_set_pos(btn_back, 0, 460); // Posición del botón
-            lv_obj_set_size(btn_back, 240, 40); // Tamaño del botón
-            lv_obj_add_event_cb(btn_back, back_to_main_menu, LV_EVENT_CLICKED, NULL); // Añade un manejador de eventos al botón
+            lv_obj_t * symbol = lv_label_create(new_screen);
+            lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+            lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-            lv_obj_t * label_back = lv_label_create(btn_back);
-            lv_label_set_text(label_back, "Volver a la lista de libros");
+            create_button(new_screen, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 510);
 
         } else {
             Serial.println("Los datos recuperados no son de tipo JSON.");
@@ -1468,33 +1466,152 @@ void book_button_event_handler(lv_event_t * e) {
     }
 }*/
 
+void go_to_screen2_tab2(lv_event_t * e) {
+    // Obtén la pantalla principal (donde están las tabs)
+    lv_obj_t * main_screen = lv_scr_act();
+    scr_principal = main_screen;
 
+    // Obtén la clave del libro desde el evento
+    std::string key = std::string(static_cast<char*>(lv_event_get_user_data(e)));
 
-
-// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab2
-void go_to_screen2_tab2(lv_event_t * e, const char* title) {
-    // Load the book information from Firebase
-    String path = "/libros/" + String(title);
-
-    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
-        FirebaseJson* json = fbdo.jsonObjectPtr();
-        FirebaseJsonData jsonData;
-
-        json->get(jsonData, "/autor");
-        String author = jsonData.stringValue;
-
-        json->get(jsonData, "/pagina_total");
-        int totalPage = jsonData.intValue;
-
-        json->get(jsonData, "/pagina_actual");
-        int currentPage = jsonData.intValue;
-
-        create_second_screen_tab2(lv_event_get_current_target(e), title, author.c_str(), totalPage, currentPage);
-    } else {
-        // Handle the error
-    }
+    // Llama a la función para crear la segunda pantalla
+    create_second_screen_tab2(main_screen, key);
 }
 
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
+void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
+    lv_obj_t * screen2 = lv_obj_create(NULL);
+    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xE9AAFF), 0);
+    lv_scr_load(screen2);
+
+    // Construir la ruta específica de los datos del libro
+    String path = "/libros/" + String(key.c_str());
+    Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            Serial.println("\nTipo de datos: JSON\n");
+            DynamicJsonDocument doc(1024);
+
+            String jsonData = fbdo.jsonData().stringValue;
+
+            String pathtitle = "/libros/" + String(key.c_str()) + "/titulo";
+            String pathauthor = "/libros/" + String(key.c_str()) + "/autor";
+            String pathtotalpages = "/libros/" + String(key.c_str()) + "/paginas_total";
+            String pathcurrentpage = "/libros/" + String(key.c_str()) + "/pagina_actual";
+
+            // Elimina las etiquetas anteriores si existen
+            /*
+            if(label_title) {
+                lv_obj_del(label_title);
+                label_title = NULL;
+            }
+            if(label_author) {
+                lv_obj_del(label_author);
+                label_author = NULL;
+            }
+            if(label_total_pages) {
+                lv_obj_del(label_total_pages);
+                label_total_pages = NULL;
+            }
+            if(label_current_page) {
+                lv_obj_del(label_current_page);
+                label_current_page = NULL;
+            }*/
+
+            if (Firebase.RTDB.getString(&fbdo, pathtitle.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String titulo = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el título
+                    label_title = lv_label_create(screen2);
+                    lv_label_set_text(label_title, ("Titulo: " + titulo).c_str());
+                    lv_obj_set_pos(label_title, 0, 30);
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getString(&fbdo, pathauthor.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
+                    String autor = fbdo.stringData(); // Almacena el título en una variable
+                    Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el autor
+                    label_author = lv_label_create(screen2);
+                    lv_label_set_text(label_author, ("Autor: " + autor).c_str());
+                    lv_obj_set_pos(label_author, 0, 50);
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo string");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathtotalpages.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int paginas_total = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el total de páginas
+                    label_total_pages = lv_label_create(screen2);
+                    lv_label_set_text(label_total_pages, ("Total de paginas: " + String(paginas_total)).c_str());
+                    lv_obj_set_pos(label_total_pages, 0, 70);
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+            if (Firebase.RTDB.getInt(&fbdo, pathcurrentpage.c_str())) { // Intenta obtener el título del libro desde Firebase
+                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
+                    int pagina_actual = fbdo.intData(); // Almacena el título en una variable
+                    Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para la página actual
+                    label_current_page = lv_label_create(screen2);
+                    lv_label_set_text(label_current_page, ("Pagina actual: " + String(pagina_actual)).c_str());
+                    lv_obj_set_pos(label_current_page, 0, 90);
+                } else {
+                    Serial.println("Error: los datos obtenidos no son de tipo int");
+                }
+            } else {
+                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
+            }
+
+
+        } else {
+            Serial.println("Los datos recuperados no son de tipo JSON.");
+        }
+    } else {
+        Serial.println("Fallo al recuperar datos de Firebase.");
+    }
+
+
+
+    lv_obj_t * symbol = lv_label_create(screen2);
+    lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+    create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 140);
+
+    lv_obj_t * space = lv_label_create(screen2);
+    lv_label_set_text(space, "\n\n\n");
+    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 150);
+}
+
+
+void create_second_screen_tab2(lv_obj_t *padre) {
+
+}
+
+/*
 void create_second_screen_tab2(lv_obj_t *padre, const String& bookTitle, const String& author, int totalPage, int currentPage) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
@@ -1517,7 +1634,7 @@ void create_second_screen_tab2(lv_obj_t *padre, const String& bookTitle, const S
     lv_obj_t * space = lv_label_create(screen2);
     lv_label_set_text(space, "\n\n\n");
     lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 510);
-}
+}*/
 
 
 
