@@ -1202,6 +1202,10 @@ void book_button_event_handler(lv_event_t * e) {
     }
 }*/
 
+lv_obj_t * label_title = NULL;
+lv_obj_t * label_author = NULL;
+lv_obj_t * label_total_pages = NULL;
+lv_obj_t * label_current_page = NULL;
 
 void book_button_event_handler(lv_event_t * e) {
     // Obtener la clave del libro desde el evento
@@ -1223,10 +1227,35 @@ void book_button_event_handler(lv_event_t * e) {
             String pathtotalpages = "/libros/" + String(key.c_str()) + "/paginas_total";
             String pathcurrentpage = "/libros/" + String(key.c_str()) + "/pagina_actual";
 
+            lv_obj_t * parent = lv_scr_act(); // Obtén la pantalla activa
+
+            // Elimina las etiquetas anteriores si existen
+            if(label_title) {
+                lv_obj_del(label_title);
+                label_title = NULL;
+            }
+            if(label_author) {
+                lv_obj_del(label_author);
+                label_author = NULL;
+            }
+            if(label_total_pages) {
+                lv_obj_del(label_total_pages);
+                label_total_pages = NULL;
+            }
+            if(label_current_page) {
+                lv_obj_del(label_current_page);
+                label_current_page = NULL;
+            }
+
             if (Firebase.RTDB.getString(&fbdo, pathtitle.c_str())) { // Intenta obtener el título del libro desde Firebase
                 if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
                     String titulo = fbdo.stringData(); // Almacena el título en una variable
                     Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el título
+                    label_title = lv_label_create(parent);
+                    lv_label_set_text(label_title, ("Titulo: " + titulo).c_str());
+                    lv_obj_set_pos(label_title, 0, 350);
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo string");
                 }
@@ -1238,6 +1267,11 @@ void book_button_event_handler(lv_event_t * e) {
                 if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
                     String autor = fbdo.stringData(); // Almacena el título en una variable
                     Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el autor
+                    label_author = lv_label_create(parent);
+                    lv_label_set_text(label_author, ("Autor: " + autor).c_str());
+                    lv_obj_set_pos(label_author, 0, 370);
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo string");
                 }
@@ -1249,6 +1283,11 @@ void book_button_event_handler(lv_event_t * e) {
                 if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
                     int paginas_total = fbdo.intData(); // Almacena el título en una variable
                     Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para el total de páginas
+                    label_total_pages = lv_label_create(parent);
+                    lv_label_set_text(label_total_pages, ("Total de paginas: " + String(paginas_total)).c_str());
+                    lv_obj_set_pos(label_total_pages, 0, 390);
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo int");
                 }
@@ -1260,6 +1299,11 @@ void book_button_event_handler(lv_event_t * e) {
                 if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
                     int pagina_actual = fbdo.intData(); // Almacena el título en una variable
                     Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
+
+                    // Crea una etiqueta para la página actual
+                    label_current_page = lv_label_create(parent);
+                    lv_label_set_text(label_current_page, ("Pagina actual: " + String(pagina_actual)).c_str());
+                    lv_obj_set_pos(label_current_page, 0, 410);
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo int");
                 }
