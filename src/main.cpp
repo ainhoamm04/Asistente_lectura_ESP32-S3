@@ -1181,7 +1181,7 @@ void book_button_event_handler(lv_event_t * e) {
                     return;
                 }
 
-                // Guardar todo el objeto del libro para acceder a él más tarde
+                // Guardar
                 JsonObject bookObject = doc.as<JsonObject>();
 
                 // Extraer e imprimir datos específicos del libro
@@ -1214,6 +1214,11 @@ void book_button_event_handler(lv_event_t * e) {
     // Construir la ruta específica de los datos del libro
     String path = "/libros/" + String(key.c_str());
     Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+
+    // Crear una nueva pantalla
+    lv_obj_t * new_screen = lv_obj_create(NULL);
+    lv_obj_set_size(new_screen, LV_HOR_RES, LV_VER_RES);
+    lv_scr_load(new_screen); // Cargar la nueva pantalla
 
     if (Firebase.RTDB.get(&fbdo, path.c_str())) {
         if (fbdo.dataType() == "json") {
@@ -1253,7 +1258,7 @@ void book_button_event_handler(lv_event_t * e) {
                     Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
 
                     // Crea una etiqueta para el título
-                    label_title = lv_label_create(parent);
+                    label_title = lv_label_create(new_screen);
                     lv_label_set_text(label_title, ("Titulo: " + titulo).c_str());
                     lv_obj_set_pos(label_title, 0, 350);
                 } else {
@@ -1269,7 +1274,7 @@ void book_button_event_handler(lv_event_t * e) {
                     Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
 
                     // Crea una etiqueta para el autor
-                    label_author = lv_label_create(parent);
+                    label_author = lv_label_create(new_screen);
                     lv_label_set_text(label_author, ("Autor: " + autor).c_str());
                     lv_obj_set_pos(label_author, 0, 370);
                 } else {
@@ -1285,7 +1290,7 @@ void book_button_event_handler(lv_event_t * e) {
                     Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
 
                     // Crea una etiqueta para el total de páginas
-                    label_total_pages = lv_label_create(parent);
+                    label_total_pages = lv_label_create(new_screen);
                     lv_label_set_text(label_total_pages, ("Total de paginas: " + String(paginas_total)).c_str());
                     lv_obj_set_pos(label_total_pages, 0, 390);
                 } else {
@@ -1301,7 +1306,7 @@ void book_button_event_handler(lv_event_t * e) {
                     Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
 
                     // Crea una etiqueta para la página actual
-                    label_current_page = lv_label_create(parent);
+                    label_current_page = lv_label_create(new_screen);
                     lv_label_set_text(label_current_page, ("Pagina actual: " + String(pagina_actual)).c_str());
                     lv_obj_set_pos(label_current_page, 0, 410);
                 } else {
@@ -1311,7 +1316,14 @@ void book_button_event_handler(lv_event_t * e) {
                 Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
             }
 
+            // Crea un botón para volver a la pantalla principal
+            lv_obj_t * btn_back = lv_btn_create(new_screen);
+            lv_obj_set_pos(btn_back, 0, 460); // Posición del botón
+            lv_obj_set_size(btn_back, 240, 40); // Tamaño del botón
+            lv_obj_add_event_cb(btn_back, back_to_main_menu, LV_EVENT_CLICKED, NULL); // Añade un manejador de eventos al botón
 
+            lv_obj_t * label_back = lv_label_create(btn_back);
+            lv_label_set_text(label_back, "Volver a la lista de libros");
 
         } else {
             Serial.println("Los datos recuperados no son de tipo JSON.");
