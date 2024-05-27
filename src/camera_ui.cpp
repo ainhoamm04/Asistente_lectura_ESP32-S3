@@ -2,6 +2,9 @@
 #include "camera.h"
 #include "sd_card.h"
 #include "lv_img.h"
+#include "firebase_config.h"
+#include <Firebase_ESP_Client.h>
+#include <ArduinoJson.h>
 
 lv_img_dsc_t photo_show;          //apply an lvgl image variable
 lvgl_camera_ui guider_camera_ui;  //camera ui structure
@@ -114,7 +117,7 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 }
 */
 
-String selected_isbn;
+//String selected_isbn;
 
 // Modificación de la función camera_imgbtn_photo_event_handler
 static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
@@ -124,14 +127,17 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
         if (camera_task_flag == 1) {
             stop_camera_task();
             set_book_number(); // Llama a set_book_number
-            selected_isbn = get_book_number(); // Asigna el valor devuelto por get_book_number a selected_isbn
-            Book* book = search_by_isbn(selected_isbn);
+            //selected_isbn = get_book_number(); // Asigna el valor devuelto por get_book_number a selected_isbn
+            //Book* book = search_by_isbn(selected_isbn);
+            /*
             if (book != nullptr) {
                 book->found = true;
                 Serial.println("Book found: " + book->title);
             } else {
                 Serial.println("Book not found");
-            }
+            }*/
+
+            searchIsbnInDatabase();
             go_to_screen2(e);
             //go_to_screen2_tab2(e);
             create_camera_task();
@@ -143,7 +149,7 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
 
 
 
-
+/*
 Book book1("Invisible", "Eloy Moreno", "299 paginas", "9788416588435", 0);
 Book book2("El valle de los lobos", "Laura Gallego", "271 paginas", "9788467539677", 0);
 Book book3("La maldicion del maestro", "Laura Gallego", "239 paginas", "9788467539684", 0);
@@ -152,6 +158,7 @@ Book book5("Fenris, el elfo", "Laura Gallego", "299 paginas", "9788467539707", 0
 Book bookNotFound("LIBRO NO ENCONTRADO", "", "", "", 0);
 
 Book book_array[6] = {book1, book2, book3, book4, book5, bookNotFound};
+*/
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
@@ -159,45 +166,39 @@ void create_second_screen(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
     lv_scr_load(screen2);
 
-    Book* book = search_by_isbn(get_book_number());
-    lv_obj_t * label1 = lv_label_create(screen2);
-    lv_label_set_text(label1, book->title.c_str());
-    lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
-    lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 20);
+    if(book_found) {
+        lv_obj_t * label1 = lv_label_create(screen2);
+        lv_label_set_text(label1, title.c_str());
+        lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+        lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 20);
 
-    lv_obj_t * label2 = lv_label_create(screen2);
-    lv_label_set_text(label2, book->author.c_str());
-    lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
-    lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 40);
+        lv_obj_t * label2 = lv_label_create(screen2);
+        lv_label_set_text(label2, author.c_str());
+        lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
+        lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 40);
 
-    lv_obj_t * label3 = lv_label_create(screen2);
-    lv_label_set_text(label3, book->pages.c_str());
-    lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
-    lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
+        lv_obj_t * label3 = lv_label_create(screen2);
+        lv_label_set_text(label3, (String(totalPages) + " páginas").c_str());
+        lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
+        lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
 
-    // Si el libro fue encontrado, muestra la etiqueta y el teclado numérico
-    if (book->title != "LIBRO NO ENCONTRADO") {
-        // Crea una etiqueta para mostrar el número introducido por el usuario
         lv_obj_t * label4 = lv_label_create(screen2);
-        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 110);
-        lv_label_set_text(label4, "¿En qué página te encuentras?");
+        lv_label_set_text(label4, ("Página anterior: " + String(currentPage)).c_str());
         lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
+        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
 
-        // Obtén el libro actual
-        Book* current_book = search_by_isbn(get_book_number());
-        // Crea una etiqueta para mostrar la página actual del libro
-        lv_obj_t * label_current_page = lv_label_create(screen2);
-        lv_obj_set_style_text_font(label_current_page, &ubuntu_regular_16, 0);
-        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 85); // Ajusta la posición según tus necesidades
-        // Convierte la página actual a string
-        char current_page_str[32];
-        sprintf(current_page_str, "%d", current_book->getCurrentPage());
-        // Establece el texto de la etiqueta al valor de la página actual del libro
-        lv_label_set_text_fmt(label_current_page, "Página anterior: %s", current_page_str);
+        lv_obj_t * label5 = lv_label_create(screen2);
+        lv_obj_align(label5, LV_ALIGN_TOP_MID, 0, 110);
+        lv_label_set_text(label5, "¿En qué página te encuentras?");
+        lv_obj_set_style_text_font(label5, &ubuntu_regular_16, 0);
 
-        // Muestra el teclado numérico
-        show_numeric_keyboard(label4);
+        show_numeric_keyboard(label5);
     } else {
+        lv_obj_t * label = lv_label_create(screen2);
+        lv_label_set_text(label, "Libro no encontrado");
+        lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
         lv_obj_t * home_btn = lv_imgbtn_create(screen2);
         lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
 
@@ -210,6 +211,30 @@ void create_second_screen(lv_obj_t *padre) {
         lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
         lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
     }
+
+
+
+    // Si el libro fue encontrado, muestra la etiqueta y el teclado numérico
+    //if (book->title != "LIBRO NO ENCONTRADO") {
+        /*
+        // Crea una etiqueta para mostrar el número introducido por el usuario
+        // Obtén el libro actual
+        //Book* current_book = search_by_isbn(get_book_number());
+        // Crea una etiqueta para mostrar la página actual del libro
+        lv_obj_t * label_current_page = lv_label_create(screen2);
+        lv_obj_set_style_text_font(label_current_page, &ubuntu_regular_16, 0);
+        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 85); // Ajusta la posición según tus necesidades
+        // Convierte la página actual a string
+        char current_page_str[32];
+        sprintf(current_page_str, "%d", current_book->getCurrentPage());
+        // Establece el texto de la etiqueta al valor de la página actual del libro
+        lv_label_set_text_fmt(label_current_page, "Página anterior: %s", current_page_str);
+
+        // Muestra el teclado numérico*/
+
+    //} else {
+
+    //}
 
     // Botón de casa para volver a la pantalla principal
     /*
@@ -271,6 +296,65 @@ String get_book_number() {
 }
 
 
+bool book_found = false;
+String book_key;
+String title;
+String author;
+int totalPages;
+int currentPage;
+
+void searchIsbnInDatabase() {
+    // Obtén el ISBN aleatorio
+    String randomIsbn = get_book_number();
+
+    // Intenta obtener todos los libros desde Firebase
+    if (Firebase.RTDB.get(&fbdo, "/libros")) {
+        if (fbdo.dataType() == "json") {
+            FirebaseJson* json = fbdo.jsonObjectPtr();
+            String jsonString;
+            json->toString(jsonString);
+
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, jsonString);
+
+            // Recorre todos los libros en la base de datos
+            for(JsonPair kv : doc.as<JsonObject>()) {
+                // Compara el ISBN de cada libro con el ISBN aleatorio
+                String isbn = kv.value()["isbn"].as<String>();
+                if (isbn == randomIsbn) {
+                    book_found = true;
+
+                    // Almacena la clave del libro
+                    book_key = kv.key().c_str();
+
+                    // Si encuentras un libro con el mismo ISBN, guarda los datos
+                    title = kv.value()["titulo"].as<String>();
+                    author = kv.value()["autor"].as<String>();
+                    totalPages = kv.value()["paginas_total"].as<int>();
+                    currentPage = kv.value()["pagina_actual"].as<int>();
+
+                    // Aquí puedes hacer lo que necesites con los datos del libro
+                    // Por ejemplo, podrías imprimirlos en la consola
+                    Serial.println("Libro encontrado:");
+                    Serial.println("Titulo: " + title);
+                    Serial.println("Autor: " + author);
+                    Serial.println("Paginas totales: " + String(totalPages));
+                    Serial.println("Pagina actual: " + String(currentPage));
+                    break;
+                }
+            }
+        } else {
+            book_found = false;
+            Serial.println("Los datos recuperados no son de tipo JSON.");
+        }
+    } else {
+        Serial.println("Fallo al recuperar datos de Firebase.");
+    }
+}
+
+
+
+
 
 /*
 Book search_by_isbn(String isbn_aux){
@@ -289,6 +373,7 @@ Book search_by_isbn(String isbn_aux){
     }
 }*/
 
+/*
 Book* search_by_isbn(const String& isbn) {
     for(int i = 0; i < 6; i++) {
         if(book_array[i].isbn == isbn) {
@@ -296,7 +381,7 @@ Book* search_by_isbn(const String& isbn) {
         }
     }
     return &bookNotFound; // return pointer to bookNotFound if no match is found
-}
+}*/
 
 /*
 Book get_book_by_isbn(const String& isbn, int number) {
@@ -376,10 +461,11 @@ static void keyboard_event_cb(lv_event_t * e) {
         int number = atoi(lv_textarea_get_text(ta));
 
         // Obtén el libro actual
-        Book* current_book = search_by_isbn(get_book_number());
+        //Book* current_book = search_by_isbn(get_book_number());
+        searchIsbnInDatabase();
 
         // Convierte el número de páginas a un entero
-        int max_value = atoi(current_book->pages.c_str());
+        int max_value = totalPages;
 
         if(number > max_value) {
             char max_value_str[32];
@@ -389,7 +475,12 @@ static void keyboard_event_cb(lv_event_t * e) {
         }
 
         // Actualizar la variable de página correspondiente al libro actual
-        current_book->setCurrentPage(number);
+        currentPage = number;
+
+        // Actualizar el valor de currentPage en la base de datos
+        //Firebase.RTDB.setInt(&fbdo, "/libros/" + get_book_number() + "/currentPage", currentPage);
+        Firebase.RTDB.setInt(&fbdo, "/libros/" + book_key + "/pagina_actual", currentPage);
+
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);

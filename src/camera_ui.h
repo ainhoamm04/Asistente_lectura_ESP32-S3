@@ -5,6 +5,9 @@
 #include "Arduino.h"
 #include "ArduinoNvs.h"
 #include "esp_camera.h"
+#include "firebase_config.h"
+#include <Firebase_ESP_Client.h>
+#include <ArduinoJson.h>
 
 extern camera_fb_t *fb;
 
@@ -30,6 +33,7 @@ void go_to_screen2_tab2(lv_event_t * e);
 void create_second_screen(lv_obj_t *padre);
 static void go_to_screen2(lv_event_t * e);
 
+/*
 class Book {
 public:
     String title;
@@ -49,8 +53,9 @@ public:
     void setCurrentPage(int page) {
         NVS.setInt(isbn, page);
     }
-};
+};*/
 
+/*
 // Crear los objetos Book de antemano
 extern Book book1;
 extern Book book2;
@@ -59,16 +64,25 @@ extern Book book4;
 extern Book book5;
 extern Book bookNotFound;
 
-extern Book book_array[6];
+extern Book book_array[6];*/
 
 // Declaración de selected_isbn como variable global
-extern String selected_isbn;
+//extern String selected_isbn;
 
 //Book get_book_by_isbn(const String& isbn);
-Book* search_by_isbn(const String& isbn);
+//Book* search_by_isbn(const String& isbn);
 void set_book_number();
-String get_book_number();
+extern String get_book_number();
 void show_numeric_keyboard(lv_obj_t * label);
 extern int camera_button_press_count;
+
+void searchIsbnInDatabase();
+extern String book_key;
+extern bool book_found;
+extern String title;
+extern String author;
+extern int totalPages;
+extern int currentPage;
+
 
 #endif
