@@ -73,51 +73,6 @@ void ui_set_photo_show(void) {
   photo_show.data = NULL;
 }
 
-//Click the photo icon, callback function: goes to the main ui interface
-/*
-static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
-  lv_event_code_t code = lv_event_get_code(e);
-  if (code == LV_EVENT_CLICKED) {
-    Serial.println("Clicked the camera button.");
-    if (camera_task_flag == 1) {
-        Serial.println("1");
-      stop_camera_task();
-
-        Serial.println("2");
-
-      fb = esp_camera_fb_get();
-
-        Serial.println("3");
-
-      if (fb != NULL) {
-
-          Serial.println("4a");
-        for (int i = 0; i < fb->len; i += 2) {
-          uint8_t temp = 0;
-          temp = fb->buf[i];
-          fb->buf[i] = fb->buf[i + 1];
-          fb->buf[i + 1] = temp;
-        }
-        int photo_index = list_count_number(list_picture);
-        Serial.printf("photo_index: %d\r\n", photo_index);
-        if (photo_index != -1) {
-          String path = String(PICTURE_FOLDER) + "/" + String(++photo_index) + ".bmp";  //You can view it directly from your computer
-          write_rgb565_to_bmp((char *)path.c_str(), fb->buf, fb->len, fb->height, fb->width);
-          list_insert_tail(list_picture, (char *)path.c_str());
-        }
-      } else {
-
-          Serial.println("4b");
-        Serial.println("Camera capture failed.");
-      }
-      esp_camera_fb_return(fb);
-    }
-    create_camera_task();
-  }
-}
-*/
-
-//String selected_isbn;
 
 // Modificación de la función camera_imgbtn_photo_event_handler
 static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
@@ -126,44 +81,63 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
         Serial.println("Clicked the camera button.");
         if (camera_task_flag == 1) {
             stop_camera_task();
-            set_book_number(); // Llama a set_book_number
-            //selected_isbn = get_book_number(); // Asigna el valor devuelto por get_book_number a selected_isbn
-            //Book* book = search_by_isbn(selected_isbn);
-            /*
-            if (book != nullptr) {
-                book->found = true;
-                Serial.println("Book found: " + book->title);
-            } else {
-                Serial.println("Book not found");
-            }*/
-
+            set_book_number();
             searchIsbnInDatabase();
             go_to_screen2(e);
-            //go_to_screen2_tab2(e);
             create_camera_task();
         }
     }
 }
 
+typedef enum {
+    BUTTON_STYLE_ORANGE
+} button_style_t;
+void create_orange_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv_event_cb_t event_cb, lv_coord_t pos_x, lv_coord_t pos_y) {
+    // Estilos para los botones
+    static lv_style_t style_orange;
+    static lv_style_t style_btn_pressed;
+    static lv_style_t style_btn;
 
+    lv_style_init(&style_orange);
+    lv_style_set_bg_color(&style_orange, lv_color_hex(0xFFA82A )); // Fondo naranja
+    lv_style_set_border_color(&style_orange, lv_color_hex(0xD17C00)); // Borde naranja
 
+    // Estilo para el botón presionado
+    lv_style_init(&style_btn_pressed);
+    lv_style_set_translate_y(&style_btn_pressed, 5);
 
+    lv_style_init(&style_btn);
+    lv_style_set_radius(&style_btn, 10);
+    lv_style_set_bg_opa(&style_btn, LV_OPA_COVER);
+    lv_style_set_border_width(&style_btn, 2);
+    lv_style_set_border_opa(&style_btn, LV_OPA_50);
 
-/*
-Book book1("Invisible", "Eloy Moreno", "299 paginas", "9788416588435", 0);
-Book book2("El valle de los lobos", "Laura Gallego", "271 paginas", "9788467539677", 0);
-Book book3("La maldicion del maestro", "Laura Gallego", "239 paginas", "9788467539684", 0);
-Book book4("La llamada de los muertos", "Laura Gallego", "239 paginas", "9788467539691", 0);
-Book book5("Fenris, el elfo", "Laura Gallego", "299 paginas", "9788467539707", 0);
-Book bookNotFound("LIBRO NO ENCONTRADO", "", "", "", 0);
+    // Crea el botón y aplica el estilo correspondiente
+    lv_obj_t * btn = lv_btn_create(parent);
+    lv_obj_remove_style_all(btn); // Elimina estilos previos
 
-Book book_array[6] = {book1, book2, book3, book4, book5, bookNotFound};
-*/
+    lv_obj_add_style(btn, &style_orange, 0);
+    lv_obj_set_size(btn, 50, 50);
+
+    lv_obj_add_style(btn, &style_btn_pressed, LV_STATE_PRESSED);
+    lv_obj_add_style(btn, &style_btn, 0); // Aplica el nuevo estilo
+
+    // Aplica la etiqueta al botón
+    lv_obj_set_parent(label, btn); // Establece el botón como el nuevo padre de la etiqueta
+    lv_obj_center(label); // Centra la etiqueta en el botón
+
+    // Configura el tamaño y la posición del botón
+    lv_obj_set_pos(btn, pos_x, pos_y); // Posición del botón modificable
+
+    // Añade la lógica para el evento de presionado
+    lv_obj_add_event_cb(btn, event_cb, LV_EVENT_CLICKED, NULL);
+}
+
 
 void create_second_screen(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
     lv_scr_load(screen2);
 
     if(book_found) {
@@ -195,64 +169,19 @@ void create_second_screen(lv_obj_t *padre) {
         show_numeric_keyboard(label5);
     } else {
         lv_obj_t * label = lv_label_create(screen2);
-        lv_label_set_text(label, "Libro no encontrado");
+        lv_label_set_text(label, "         LIBRO\n           NO\nENCONTRADO");
         lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-        lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 40);
 
-        lv_obj_t * home_btn = lv_imgbtn_create(screen2);
-        lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
+        //Crear boton para regresar a la pantalla principal con estilo
+        lv_obj_t * symbol = lv_label_create(screen2);
+        lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+        lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-        static lv_style_t style_btn_pressed;
-        lv_style_init(&style_btn_pressed);
-        lv_style_set_translate_y(&style_btn_pressed, 5);
-        lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
-
-        lv_obj_set_pos(home_btn, 75, 150); // Ajusta la posición según tus necesidades
-        lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
-        lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
+        create_orange_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
     }
-
-
-
-    // Si el libro fue encontrado, muestra la etiqueta y el teclado numérico
-    //if (book->title != "LIBRO NO ENCONTRADO") {
-        /*
-        // Crea una etiqueta para mostrar el número introducido por el usuario
-        // Obtén el libro actual
-        //Book* current_book = search_by_isbn(get_book_number());
-        // Crea una etiqueta para mostrar la página actual del libro
-        lv_obj_t * label_current_page = lv_label_create(screen2);
-        lv_obj_set_style_text_font(label_current_page, &ubuntu_regular_16, 0);
-        lv_obj_align(label_current_page, LV_ALIGN_TOP_MID, 0, 85); // Ajusta la posición según tus necesidades
-        // Convierte la página actual a string
-        char current_page_str[32];
-        sprintf(current_page_str, "%d", current_book->getCurrentPage());
-        // Establece el texto de la etiqueta al valor de la página actual del libro
-        lv_label_set_text_fmt(label_current_page, "Página anterior: %s", current_page_str);
-
-        // Muestra el teclado numérico*/
-
-    //} else {
-
-    //}
-
-    // Botón de casa para volver a la pantalla principal
-    /*
-    lv_obj_t * home_btn = lv_imgbtn_create(screen2);
-    lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
-
-    static lv_style_t style_btn_pressed;
-    lv_style_init(&style_btn_pressed);
-    lv_style_set_translate_y(&style_btn_pressed, 5);
-    lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
-
-    lv_obj_set_pos(home_btn, 75, 350); // Ajusta la posición según tus necesidades
-    lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
-    lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
-    */
 }
 
-// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
 
 static void go_to_screen2(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
@@ -265,28 +194,22 @@ String isbn_aux;
 void set_book_number() {
     camera_button_press_count++;
     if (camera_button_press_count == 1) {
+        isbn_aux = "9788416588436";
+    }
+    else if (camera_button_press_count == 2) {
         isbn_aux = "9788416588435"; //Invisible
-        //return isbn;
-    } else if (camera_button_press_count == 2) {
-        isbn_aux = "9788467539677"; //El valle de los lobos
-        //return isbn;
     } else if (camera_button_press_count == 3) {
         isbn_aux = "9788467539677"; //El valle de los lobos
-        //return isbn;
     } else if (camera_button_press_count == 4) {
         isbn_aux = "9788467539677"; //El valle de los lobos
-        //return isbn;
     } else if (camera_button_press_count == 5) {
-        isbn_aux = "9788416588435"; //Invisible
-        //return isbn;
+        isbn_aux = "9788467539677"; //El valle de los lobos
     } else if (camera_button_press_count == 6) {
+        isbn_aux = "9788416588435"; //Invisible
+    } else if (camera_button_press_count == 7) {
         isbn_aux = "9788467539707"; //Fenris, el elfo
-        //return isbn;
-    }
-
-    else {
-        isbn_aux = "";
-        //return ""; // Devuelve una cadena vacía o cualquier valor por defecto después de la segunda pulsación
+    } else {
+        isbn_aux = "0000000000000";
     }
 }
 
@@ -306,6 +229,9 @@ int currentPage;
 void searchIsbnInDatabase() {
     // Obtén el ISBN aleatorio
     String randomIsbn = get_book_number();
+
+    // Inicializa book_found a false
+    book_found = false;
 
     // Intenta obtener todos los libros desde Firebase
     if (Firebase.RTDB.get(&fbdo, "/libros")) {
@@ -344,66 +270,17 @@ void searchIsbnInDatabase() {
                 }
             }
         } else {
-            book_found = false;
             Serial.println("Los datos recuperados no son de tipo JSON.");
         }
     } else {
         Serial.println("Fallo al recuperar datos de Firebase.");
     }
+
+    // Si no se encontró el libro, imprime "Libro no encontrado"
+    if (!book_found) {
+        Serial.println("Libro no encontrado");
+    }
 }
-
-
-
-
-
-/*
-Book search_by_isbn(String isbn_aux){
-    int i = 0;
-    int salida = 0;
-    while(salida == 0){
-        if (isbn_aux == book_array[i].isbn){
-            return book_array[i];
-            salida = 1;
-        } else {
-            i++;
-        } if (i == 5){
-            return book_array[5];
-            salida = 1;
-        }
-    }
-}*/
-
-/*
-Book* search_by_isbn(const String& isbn) {
-    for(int i = 0; i < 6; i++) {
-        if(book_array[i].isbn == isbn) {
-            return &book_array[i];
-        }
-    }
-    return &bookNotFound; // return pointer to bookNotFound if no match is found
-}*/
-
-/*
-Book get_book_by_isbn(const String& isbn, int number) {
-    if (isbn == "9788416588435") {
-        isbnMatrix[0][1] = number;
-        return book1;
-    } else if (isbn == "9788467539677") {
-        isbnMatrix[1][1] = number;
-        return book2;
-    } else if (isbn == "9788467539684") {
-        isbnMatrix[2][1] = number;
-        return book3;
-    } else if (isbn == "9788467539691") {
-        isbnMatrix[3][1] = number;
-        return book4;
-    } else if (isbn == "9788467539707") {
-        isbnMatrix[4][1] = number;
-        return book5;
-    } else {
-        return bookNotFound;
-    }
-}*/
 
 
 // Declaración de la función de devolución de llamada
@@ -413,23 +290,21 @@ static void keyboard_event_cb(lv_event_t * e);
 void show_numeric_keyboard(lv_obj_t * label) {
     // Crear un objeto textarea para almacenar el número introducido por el usuario
     lv_obj_t * ta = lv_textarea_create(lv_scr_act());
+
+    static lv_style_t style_ta;
+    lv_style_init(&style_ta);
+    lv_style_set_bg_color(&style_ta, lv_color_hex(0xFFF0BE)); // Cambia el color de fondo a tu gusto
+    lv_obj_add_style(ta, &style_ta, 0);
     lv_obj_set_size(ta, 100, 40); // Ajusta el tamaño según tus necesidades
     lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 140); // Ajusta la posición según tus necesidades
 
     // Establecer el texto inicial del textarea a una cadena vacía
     lv_textarea_set_text(ta, "");
 
-    /*
-    // Crear un teclado numérico y asociarlo al textarea
-    lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
-    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUMBER);
-    lv_keyboard_set_textarea(kb, ta);
-     */
-
-    static const char * kb_map[] = {"1", "2", "3", LV_SYMBOL_BACKSPACE, "\n",
+    static const char * kb_map[] = {"1", "2", "3", LV_SYMBOL_OK, "\n",
                                     "4", "5", "6", LV_SYMBOL_NEW_LINE, "\n",
-                                    "7", "8", "9", LV_SYMBOL_OK, "\n",
-                                    "0", LV_SYMBOL_RIGHT, LV_SYMBOL_LEFT, NULL
+                                    "7", "8", "9", LV_SYMBOL_BACKSPACE, "\n",
+                                    "0", LV_SYMBOL_LEFT, LV_SYMBOL_RIGHT, NULL
     };
 
     /*Set the relative width of the buttons and other controls*/
@@ -447,6 +322,11 @@ void show_numeric_keyboard(lv_obj_t * label) {
     lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_USER_1);
     lv_keyboard_set_textarea(kb, ta);
 
+    static lv_style_t style_kb;
+    lv_style_init(&style_kb);
+    lv_style_set_bg_color(&style_kb, lv_color_hex(0xFFF0BE)); // Cambia el color de fondo a tu gusto
+    lv_obj_add_style(kb, &style_kb, 0); // Aplica el estilo al teclado
+
     // Registrar la función de devolución de llamada para el evento LV_EVENT_READY
     lv_obj_add_event_cb(kb, keyboard_event_cb, LV_EVENT_READY, label);
 }
@@ -460,8 +340,6 @@ static void keyboard_event_cb(lv_event_t * e) {
     if(lv_event_get_code(e) == LV_EVENT_READY) {
         int number = atoi(lv_textarea_get_text(ta));
 
-        // Obtén el libro actual
-        //Book* current_book = search_by_isbn(get_book_number());
         searchIsbnInDatabase();
 
         // Convierte el número de páginas a un entero
@@ -478,9 +356,7 @@ static void keyboard_event_cb(lv_event_t * e) {
         currentPage = number;
 
         // Actualizar el valor de currentPage en la base de datos
-        //Firebase.RTDB.setInt(&fbdo, "/libros/" + get_book_number() + "/currentPage", currentPage);
         Firebase.RTDB.setInt(&fbdo, "/libros/" + book_key + "/pagina_actual", currentPage);
-
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);
@@ -489,23 +365,14 @@ static void keyboard_event_cb(lv_event_t * e) {
         lv_obj_del(kb);
         lv_obj_del(ta);
 
-        lv_obj_t * home_btn = lv_imgbtn_create(lv_scr_act());
-        lv_img_set_src(home_btn, &img_home); // img_home debe ser un recurso de imagen que represente una casa o un icono de "volver"
+        //Crear boton para regresar a la pantalla principal con estilo
+        lv_obj_t * symbol = lv_label_create(lv_scr_act());
+        lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+        lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-        static lv_style_t style_btn_pressed;
-        lv_style_init(&style_btn_pressed);
-        lv_style_set_translate_y(&style_btn_pressed, 5);
-        lv_obj_add_style(home_btn, &style_btn_pressed, LV_STATE_PRESSED);
-
-        lv_obj_set_pos(home_btn, 75, 150); // Ajusta la posición según tus necesidades
-        lv_obj_set_size(home_btn, 80, 80); // Ajusta el tamaño según tus necesidades
-        lv_obj_add_event_cb(home_btn, back_to_main_menu, LV_EVENT_CLICKED, NULL); // back_to_main_menu debe ser una función que cambie la pantalla activa a la pantalla principal
+        create_orange_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
     }
 }
-
-
-
-
 
 
 //Click the logo icon, callback function: goes to the main ui interface
@@ -519,30 +386,7 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
     }
 }
 
-/*
-//Slide the screen to flip the screen
-static void camera_screen_gesture_event_handler(lv_event_t *e) {
-  lv_event_code_t code = lv_event_get_code(e);
-  if (code == LV_EVENT_GESTURE) {
-    lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-    bool state=0;
-    switch (dir) {
-      case LV_DIR_LEFT:
-      case LV_DIR_RIGHT:
-        state = camera_get_mirror_horizontal();
-        state = !state;
-        camera_set_mirror_horizontal(state);
-        break;
-      case LV_DIR_TOP:
-      case LV_DIR_BOTTOM:
-        state = camera_get_flip_vertical();
-        state = !state;
-        camera_set_flip_vertical(state);
-        break;
-    }
-  }
-}
- */
+
 
 //Parameter configuration function on the camera screen
 void setup_scr_camera(lvgl_camera_ui *ui) {
