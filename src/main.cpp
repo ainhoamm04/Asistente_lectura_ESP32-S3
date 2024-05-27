@@ -476,7 +476,7 @@ void tab2_content(lv_obj_t * parent) {
                 int num_books = doc.as<JsonObject>().size();
                 int list_height = num_books * 40;
                 lv_obj_set_size(list, 230, list_height);
-                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 65);
+                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
 
                 for(JsonPair kv : doc.as<JsonObject>()) {
                     String key = kv.key().c_str();
@@ -486,7 +486,11 @@ void tab2_content(lv_obj_t * parent) {
 
                     String title = kv.value()["titulo"].as<String>();
 
-                    lv_obj_t * btn = lv_list_add_btn(list, "\xEE\xB7\xA2", title.c_str());
+                    lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", title.c_str());
+
+                    lv_obj_t * label = lv_obj_get_child(btn, NULL);
+                    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+
                     lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
                     lv_obj_set_style_text_color(btn, lv_color_black(), 0);
                     lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
@@ -527,8 +531,24 @@ lv_obj_t * label_current_page = NULL;
 void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xE9AAFF), 0);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
     lv_scr_load(screen2);
+
+    lv_obj_t * label_symbols1 = lv_label_create(lv_scr_act());
+    std::string symbols = "";
+    for(int i = 0; i < 9; i++) {
+        symbols += " \xEE\xB7\xA2  ";
+    }
+    lv_label_set_text(label_symbols1, symbols.c_str());
+    lv_obj_set_style_text_font(label_symbols1, &ubuntu_regular_16, 0);
+    lv_obj_set_pos(label_symbols1, 0, 10);
+
+    lv_obj_t * label_symbols2 = lv_label_create(lv_scr_act());
+    lv_label_set_text(label_symbols2, symbols.c_str());
+    lv_obj_set_style_text_font(label_symbols2, &ubuntu_regular_16, 0);
+    lv_obj_set_pos(label_symbols2, 0, 290);
+
+    int posY = -90; // Posición inicial en Y para las etiquetas
 
     // Construir la ruta específica de los datos del libro
     String path = "/libros/" + String(key.c_str());
@@ -551,10 +571,14 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
                     String titulo = fbdo.stringData(); // Almacena el título en una variable
                     Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
 
-                    // Crea una etiqueta para el título
                     label_title = lv_label_create(screen2);
-                    lv_label_set_text(label_title, ("Titulo: " + titulo).c_str());
-                    lv_obj_set_pos(label_title, 0, 30);
+                    lv_label_set_text(label_title, (titulo).c_str());
+                    lv_obj_set_style_text_font(label_title, &bigger_symbols, 0);
+                    lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR); // Ajusta el texto para que se pase a la siguiente línea si es demasiado largo
+                    lv_obj_set_width(label_title, 225); // Establece el ancho máximo de la etiqueta
+                    lv_obj_align(label_title, LV_ALIGN_LEFT_MID, 15, posY);
+
+                    posY = posY + 40;
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo string");
                 }
@@ -570,7 +594,10 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
                     // Crea una etiqueta para el autor
                     label_author = lv_label_create(screen2);
                     lv_label_set_text(label_author, ("Autor: " + autor).c_str());
-                    lv_obj_set_pos(label_author, 0, 50);
+                    lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
+                    lv_obj_align(label_author, LV_ALIGN_LEFT_MID, 15, posY);
+
+                    posY = posY + 25;
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo string");
                 }
@@ -585,8 +612,11 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
                     // Crea una etiqueta para el total de páginas
                     label_total_pages = lv_label_create(screen2);
-                    lv_label_set_text(label_total_pages, ("Total de paginas: " + String(paginas_total)).c_str());
-                    lv_obj_set_pos(label_total_pages, 0, 70);
+                    lv_label_set_text(label_total_pages, (String(paginas_total) + " páginas en total").c_str());
+                    lv_obj_set_style_text_font(label_total_pages, &ubuntu_italic_16, 0);
+                    lv_obj_align(label_total_pages, LV_ALIGN_LEFT_MID, 15, posY);
+
+                    posY = posY + 25;
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo int");
                 }
@@ -601,8 +631,9 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
                     // Crea una etiqueta para la página actual
                     label_current_page = lv_label_create(screen2);
-                    lv_label_set_text(label_current_page, ("Pagina actual: " + String(pagina_actual)).c_str());
-                    lv_obj_set_pos(label_current_page, 0, 90);
+                    lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());
+                    lv_obj_set_style_text_font(label_current_page, &ubuntu_bold_16, 0);
+                    lv_obj_align(label_current_page, LV_ALIGN_LEFT_MID, 15, posY);
                 } else {
                     Serial.println("Error: los datos obtenidos no son de tipo int");
                 }
@@ -620,11 +651,8 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 140);
+    create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 200);
 
-    lv_obj_t * space = lv_label_create(screen2);
-    lv_label_set_text(space, "\n\n\n");
-    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 150);
 }
 
 
