@@ -726,19 +726,64 @@ static void go_to_screen2_tab3(lv_event_t * e) {
 //--------------------------------------PESTAÑA 4---------------------------------------------------
 // Array para almacenar las claves de los libros
 std::vector<std::string> book_keys;
+int max_pages = 0;
+String max_pages_book_title;
+
 
 static void tab4_content(lv_obj_t * parent) {
     general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
+
+
+    // Get the book data from Firebase
+    if (Firebase.RTDB.get(&fbdo, "/libros")) {
+        if (fbdo.dataType() == "json") {
+            FirebaseJson* json = fbdo.jsonObjectPtr();
+            String jsonString;
+            json->toString(jsonString);
+
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, jsonString);
+
+            int total_pages = 0; // Variable para almacenar el total de páginas leídas
+
+            // Iterate through each book
+            for(JsonPair kv : doc.as<JsonObject>()) {
+                int current_pages = kv.value()["pagina_actual"].as<int>();
+                String title = kv.value()["titulo"].as<String>();
+
+                total_pages += current_pages; // Suma las páginas actuales al total
+
+                // Check if this book has more pages read than the current max
+                if(current_pages > max_pages) {
+                    max_pages = current_pages;
+                    max_pages_book_title = title;
+                }
+            }
+
+            // Create a label to display the book with the most pages read
+            lv_obj_t * label = lv_label_create(parent);
+            String label_text = "Libro con más páginas leídas: \n" + max_pages_book_title + " (" + String(max_pages) + " páginas)";
+            lv_label_set_text(label, label_text.c_str());
+            lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
+            lv_obj_align(label, LV_ALIGN_TOP_LEFT, 0, 50);
+
+            // Create a label to display the total pages read
+            lv_obj_t * total_label = lv_label_create(parent);
+            String total_label_text = "Total de páginas leídas: " + String(total_pages);
+            lv_label_set_text(total_label, total_label_text.c_str());
+            lv_obj_set_style_text_font(total_label, &ubuntu_regular_16, 0);
+            lv_obj_align(total_label, LV_ALIGN_TOP_LEFT, 0, 100); // Ajusta la posición en Y según sea necesario
+        }
+    }
+
+
 
     //Botón para ir a pantalla que muestra gráfica
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 180);
-
-
-
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 200);
 
 }
 
