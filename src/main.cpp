@@ -726,21 +726,23 @@ static void go_to_screen2_tab3(lv_event_t * e) {
 //--------------------------------------PESTAÑA 4---------------------------------------------------
 // Array para almacenar las claves de los libros
 std::vector<std::string> book_keys;
+std::vector<std::pair<std::string, float>> book_percentages;
 
 static void tab4_content(lv_obj_t * parent) {
     general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
+
+
+
 
     //Botón para ir a pantalla que muestra gráfica
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 180);
-
-
-
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 200);
 
 }
+
 
 
 void create_second_screen_tab4(lv_obj_t *padre) {
@@ -810,6 +812,9 @@ void create_second_screen_tab4(lv_obj_t *padre) {
                 int pagina_actual = libro["pagina_actual"].as<int>();
                 float porcentaje = ((float)pagina_actual / paginas_total) * 100;
 
+                std::string book_title = kv.value()["titulo"].as<std::string>();
+                book_percentages.push_back(std::make_pair(book_title, porcentaje));
+
                 // Multiplica el porcentaje por 10 para mostrar un decimal
                 //int porcentaje_ajustado = round(porcentaje * 10);
 
@@ -831,9 +836,22 @@ void create_second_screen_tab4(lv_obj_t *padre) {
                 //lv_chart_set_next_value(chart, ser, porcentaje);
 
                 // Create a label for the book title and position it below the chart
+                lv_obj_t * label_key = lv_label_create(screen2);
+                lv_label_set_text_fmt(label_key, "%s: %s", book_key.c_str(), libro["titulo"].as<const char*>());
+                lv_obj_set_pos(label_key, 10, 300 + 20 * book_index); // Position the label below the chart
+
+
+                // Calculate the bar height
+                int chart_height = lv_obj_get_height(chart);
+                int bar_height = (int)((porcentaje / 100) * chart_height);
+
+                // Create a label for the percentage and position it above the bar
                 lv_obj_t * label = lv_label_create(screen2);
-                lv_label_set_text_fmt(label, "%s: %s", book_key.c_str(), libro["titulo"].as<const char*>());
-                lv_obj_set_pos(label, 10, 300 + 20 * book_index); // Position the label below the chart
+                char buf[32];
+                sprintf(buf, "%.2f%%", porcentaje);
+                lv_label_set_text(label, buf);
+                lv_obj_set_pos(label, 45 + book_index * 10, 60 - bar_height - 2 * lv_obj_get_height(label)); // Position the label above the bar
+
 
                 book_index++; // Increment the book index
             }
@@ -879,6 +897,11 @@ static void draw_label_y_axis(lv_event_t * e) {
         lv_snprintf(dsc->text, dsc->text_length, "%d%%", dsc->value);
     }
 }
+
+
+
+
+
 
 
 
