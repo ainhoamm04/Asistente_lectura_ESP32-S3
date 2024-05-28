@@ -733,7 +733,6 @@ String max_pages_book_title;
 static void tab4_content(lv_obj_t * parent) {
     general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
 
-
     // Get the book data from Firebase
     if (Firebase.RTDB.get(&fbdo, "/libros")) {
         if (fbdo.dataType() == "json") {
@@ -746,36 +745,150 @@ static void tab4_content(lv_obj_t * parent) {
 
             int total_pages = 0; // Variable para almacenar el total de páginas leídas
 
+            // Create containers for each book status
+            lv_obj_t * container_unstarted = lv_obj_create(parent);
+            //lv_obj_set_size(container_unstarted, LV_HOR_RES, 50);
+            lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 200);
+            lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+            lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
+            lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
+
+            lv_obj_t * container_in_progress = lv_obj_create(parent);
+            //lv_obj_set_size(container_in_progress, LV_HOR_RES, 100);
+            lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 200 + 100);
+            lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+            lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
+            lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
+
+            lv_obj_t * container_finished = lv_obj_create(parent);
+            //lv_obj_set_size(container_finished, LV_HOR_RES, 150);
+            lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 300 + 100);
+            lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+            lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
+            lv_obj_set_style_border_width(container_finished, 2, LV_PART_MAIN);
+
+            // Create labels for each book status
+            lv_obj_t * label_unstarted = lv_label_create(container_unstarted);
+            lv_label_set_text(label_unstarted, "LIBROS SIN EMPEZAR");
+            lv_obj_set_style_text_font(label_unstarted, &ubuntu_bold_16, 0);
+            lv_obj_align(label_unstarted, LV_ALIGN_TOP_LEFT, 0, 0);
+
+            lv_obj_t * label_in_progress = lv_label_create(container_in_progress);
+            lv_label_set_text(label_in_progress, "LIBROS A MEDIAS");
+            lv_obj_set_style_text_font(label_in_progress, &ubuntu_bold_16, 0);
+            lv_obj_align(label_in_progress, LV_ALIGN_TOP_LEFT, 0, 0);
+
+            lv_obj_t * label_finished = lv_label_create(container_finished);
+            lv_label_set_text(label_finished, "LIBROS FINALIZADOS");
+            lv_obj_set_style_text_font(label_finished, &ubuntu_bold_16, 0);
+            lv_obj_align(label_finished, LV_ALIGN_TOP_LEFT, 0, 0);
+
+            // Variables to keep track of the number of books in each status
+            int count_unstarted = 0;
+            int count_in_progress = 0;
+            int count_finished = 0;
+
             // Iterate through each book
             for(JsonPair kv : doc.as<JsonObject>()) {
                 int current_pages = kv.value()["pagina_actual"].as<int>();
+                int total_pages_book = kv.value()["paginas_total"].as<int>();
                 String title = kv.value()["titulo"].as<String>();
 
                 total_pages += current_pages; // Suma las páginas actuales al total
 
-                // Check if this book has more pages read than the current max
                 if(current_pages > max_pages) {
                     max_pages = current_pages;
                     max_pages_book_title = title;
                 }
+
+                // Check the reading status of the book and create the corresponding label
+                lv_obj_t * status_label = NULL;
+                String status_label_text = title;
+
+                if(current_pages == total_pages_book) {
+                    status_label = lv_label_create(container_finished);
+                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_finished + 1));
+                    count_finished++;
+                } else if(current_pages == 0) {
+                    status_label = lv_label_create(container_unstarted);
+                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_unstarted + 1));
+                    count_unstarted++;
+                } else {
+                    float percentage_read = float(current_pages) * 100 / total_pages_book;
+                    status_label_text += " (" + String(percentage_read) + "% leído)";
+                    status_label = lv_label_create(container_in_progress);
+                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_in_progress + 1));
+                    count_in_progress++;
+                }
+
+                lv_label_set_text(status_label, status_label_text.c_str());
+                lv_obj_set_style_text_font(status_label, &ubuntu_regular_16, 0);
             }
 
+
+
+            if(count_in_progress == 1 || count_in_progress == 0) {
+                int minHeight = 75; // Altura mínima del contenedor
+                lv_obj_set_size(container_in_progress, 210, minHeight);
+            } else {
+                int containerHeight = 50 * count_unstarted;
+                lv_obj_set_size(container_in_progress, 210, containerHeight);
+            }
+
+            if(count_unstarted == 1 || count_unstarted == 0) {
+                int minHeight = 75; // Altura mínima del contenedor
+                lv_obj_set_size(container_unstarted, 210, minHeight);
+            } else {
+                int containerHeight = 50 * count_unstarted;
+                lv_obj_set_size(container_unstarted, 210, containerHeight);
+            }
+
+            if(count_finished == 1 || count_finished == 0) {
+                int minHeight = 75; // Altura mínima del contenedor
+                lv_obj_set_size(container_finished, 210, minHeight);
+            } else {
+                int containerHeight = 50 * count_unstarted;
+                lv_obj_set_size(container_finished, 210, containerHeight);
+            }
+
+
+            Serial.println("\n" + String(count_finished) + "\n");
+            Serial.println("\n" + String(count_unstarted) + "\n");
+            Serial.println("\n" + String(count_in_progress) + "\n");
+
             // Create a label to display the book with the most pages read
-            lv_obj_t * label = lv_label_create(parent);
-            String label_text = "Libro con más páginas leídas: \n" + max_pages_book_title + " (" + String(max_pages) + " páginas)";
-            lv_label_set_text(label, label_text.c_str());
-            lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
-            lv_obj_align(label, LV_ALIGN_TOP_LEFT, 0, 50);
+            lv_obj_t * label1 = lv_label_create(parent);
+            lv_label_set_text(label1, "Libro con más páginas leídas");
+            lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+            lv_obj_align(label1, LV_ALIGN_TOP_LEFT, 0, 50);
+            lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // Añade esta línea
+            lv_obj_set_width(label1, 230); // Ajusta el ancho al de tu contenedor
+
+            lv_obj_t * label11 = lv_label_create(parent);
+            String label1_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
+            lv_label_set_text(label11, label1_text.c_str());
+            lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
+            lv_obj_align(label11, LV_ALIGN_TOP_LEFT, 0, 70);
+            lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP); // Añade esta línea
+            lv_obj_set_width(label11, 230); // Ajusta el ancho al de tu contenedor
 
             // Create a label to display the total pages read
-            lv_obj_t * total_label = lv_label_create(parent);
-            String total_label_text = "Total de páginas leídas: " + String(total_pages);
-            lv_label_set_text(total_label, total_label_text.c_str());
-            lv_obj_set_style_text_font(total_label, &ubuntu_regular_16, 0);
-            lv_obj_align(total_label, LV_ALIGN_TOP_LEFT, 0, 100); // Ajusta la posición en Y según sea necesario
+            lv_obj_t * label2 = lv_label_create(parent);
+            lv_label_set_text(label2, "Total de páginas leídas (entre todos los libros)");
+            lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
+            lv_obj_align(label2, LV_ALIGN_TOP_LEFT, 0, 125);
+            lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP); // Añade esta línea
+            lv_obj_set_width(label2, 230); // Ajusta el ancho al de tu contenedor
+
+            lv_obj_t * label22 = lv_label_create(parent);
+            String label2_text = String(total_pages) + " páginas";
+            lv_label_set_text(label22, label2_text.c_str());
+            lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
+            lv_obj_align(label22, LV_ALIGN_TOP_LEFT, 0, 168); // Ajusta la posición en Y según sea necesario
+            lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP); // Añade esta línea
+            lv_obj_set_width(label22, 230); // Ajusta el ancho al de tu contenedor
         }
     }
-
 
 
     //Botón para ir a pantalla que muestra gráfica
@@ -783,7 +896,7 @@ static void tab4_content(lv_obj_t * parent) {
     lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 200);
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 500);
 
 }
 
@@ -798,9 +911,9 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_t * chart = lv_chart_create(screen2);
 
     // Incrementa la posición en el eje X en 10px
-    lv_obj_set_pos(chart, 45, 60);
+    lv_obj_set_pos(chart, 55, 340);
 
-    lv_obj_set_size(chart, 160, 165);
+    lv_obj_set_size(chart, 160, 195);
     lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100); // Set the range from 0 to 100
     lv_obj_add_event_cb(chart, draw_label_x_axis, LV_EVENT_DRAW_PART_BEGIN, NULL);
@@ -844,6 +957,27 @@ void create_second_screen_tab4(lv_obj_t *padre) {
             // Set the point count to the number of books
             lv_chart_set_point_count(chart, doc.size());
 
+
+            int label_y_pos = 30; // Initialize the y position for the first label
+            int legend_pos = 20; // Position of the legend labels
+
+            // Create a container for the labels
+            lv_obj_t * container = lv_obj_create(screen2);
+            lv_obj_set_size(container, 210, 270); // Set the container size
+            lv_obj_set_style_bg_color(container, lv_color_hex(0xCEF2D8), LV_PART_MAIN); // Set the background color to match the screen
+            lv_obj_set_style_border_color(container, lv_color_hex(0x25B619), LV_PART_MAIN); // Set the border color to green
+            lv_obj_set_style_border_width(container, 2, LV_PART_MAIN); // Set the border width
+            lv_obj_set_pos(container, 10, legend_pos); // Set the position of the container
+
+            lv_obj_t * down_symbol = lv_label_create(screen2);
+            lv_label_set_text(down_symbol, LV_SYMBOL_DOWN);
+            lv_obj_set_pos(down_symbol, 110, 295);
+
+            lv_obj_t * label = lv_label_create(container);
+            lv_label_set_text(label, "-----------LEYENDA-----------");
+            lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
+            lv_obj_set_pos(label, 0, 0);
+
             // For each book, calculate the percentage of pages read and add a series to the chart
             for(JsonPair kv : doc.as<JsonObject>()) {
                 String book_key = kv.key().c_str(); // Get the book key
@@ -875,10 +1009,40 @@ void create_second_screen_tab4(lv_obj_t *padre) {
                 // Add a series to the chart with the calculated percentage
                 //lv_chart_set_next_value(chart, ser, porcentaje);
 
-                // Create a label for the book title and position it below the chart
-                lv_obj_t * label = lv_label_create(screen2);
-                lv_label_set_text_fmt(label, "%s: %s", book_key.c_str(), libro["titulo"].as<const char*>());
-                lv_obj_set_pos(label, 10, 300 + 20 * book_index); // Position the label below the chart
+
+
+
+
+                // Create a label for the book key and add it to the container
+                lv_obj_t * label_key = lv_label_create(container);
+                lv_label_set_text(label_key, book_key.c_str());
+                lv_obj_set_style_text_font(label_key, &ubuntu_bold_16, 0);
+                lv_obj_set_pos(label_key, 0, label_y_pos); // Position the label at the current y position
+
+                // Create a label for the book title and add it to the container
+                lv_obj_t * label_title = lv_label_create(container);
+                lv_label_set_text(label_title, libro["titulo"].as<const char*>());
+                lv_obj_set_style_text_font(label_title, &ubuntu_regular_16, 0);
+                lv_obj_set_pos(label_title, 0, label_y_pos + 20); // Position the label 20px below the key label
+
+                label_y_pos += 45;
+
+
+                /*
+                // Create a label for the book key and position it below the chart
+                lv_obj_t * label_key = lv_label_create(screen2);
+                lv_label_set_text(label_key, book_key.c_str());
+                lv_obj_set_style_text_font(label_key, &ubuntu_bold_16, 0);
+                lv_obj_set_pos(label_key, 10, legend_pos);
+
+                // Create a label for the book title and position it 20px below the key label
+                lv_obj_t * label_title = lv_label_create(screen2);
+                lv_label_set_text(label_title, libro["titulo"].as<const char*>());
+                lv_obj_set_style_text_font(label_title, &ubuntu_regular_16, 0);
+                lv_obj_set_pos(label_title, 10, legend_pos + 20);
+
+                legend_pos += 45; // Incrementa la posición en y para la próxima etiqueta
+                */
 
                 book_index++; // Increment the book index
             }
@@ -894,7 +1058,11 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(screen2, symbol, BUTTON_STYLE_GREEN, back_to_main_menu, 95, 310);
+    create_button(screen2, symbol, BUTTON_STYLE_GREEN, back_to_main_menu, 95, 580);
+
+    lv_obj_t * space = lv_label_create(screen2);
+    lv_label_set_text(space, "\n\n");
+    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 590);
 
 }
 
