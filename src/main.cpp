@@ -92,7 +92,10 @@ void searchIsbnInDatabase();
 void initialize_and_load_camera();
 
 static void tab4_content(lv_obj_t * parent);
-static void draw_event_cb(lv_event_t * e);
+void create_second_screen_tab4(lv_obj_t *padre);
+void go_to_screen2_tab4(lv_event_t * e);
+static void draw_label_x_axis(lv_event_t * e);
+static void draw_label_y_axis(lv_event_t * e);
 int reto_pag_mes = 300;
 
 
@@ -721,8 +724,162 @@ static void go_to_screen2_tab3(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 4---------------------------------------------------
+// Array para almacenar las claves de los libros
+std::vector<std::string> book_keys;
+
 static void tab4_content(lv_obj_t * parent) {
     general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
 
+    //Botón para ir a pantalla que muestra gráfica
+    lv_obj_t * symbol = lv_label_create(parent);
+    lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
+    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 180);
+
+
+
 
 }
+
+
+void create_second_screen_tab4(lv_obj_t *padre) {
+    lv_obj_t * screen2 = lv_obj_create(NULL);
+    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCEF2D8), 0);
+    lv_scr_load(screen2);
+
+
+    lv_obj_t * chart = lv_chart_create(screen2);
+
+    // Incrementa la posición en el eje X en 10px
+    lv_obj_set_pos(chart, 45, 60);
+
+    lv_obj_set_size(chart, 160, 165);
+    lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100); // Set the range from 0 to 100
+    lv_obj_add_event_cb(chart, draw_label_x_axis, LV_EVENT_DRAW_PART_BEGIN, NULL);
+    lv_obj_add_event_cb(chart, draw_label_y_axis, LV_EVENT_DRAW_PART_BEGIN, NULL);
+
+    // Set the tick labels for the Y axis
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 50); // Set the tick count to 5 (0%, 20%, 40%, 60%, 80%, 100%)
+
+    lv_chart_set_div_line_count(chart, 6, 0); // Set the division line count
+
+    lv_chart_set_zoom_x(chart, 500);
+
+    lv_chart_series_t * ser = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_LIGHT_GREEN), LV_CHART_AXIS_PRIMARY_Y); // Add color for the series
+
+    //Para que las etiquetas de los ejes aparezcan en negro y se vean mejor (antes en gris)
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_line_color(&style, lv_color_hex(0x000000));
+    lv_style_set_text_color(&style, lv_color_hex(0x000000));
+    lv_obj_add_style(chart, &style, LV_PART_TICKS);
+
+    int book_index = 0; // Book index
+
+    // Get the book data from Firebase
+    if (Firebase.RTDB.get(&fbdo, "/libros")) {
+        if (fbdo.dataType() == "json") {
+            FirebaseJson *json = fbdo.jsonObjectPtr();
+            String jsonString;
+            json->toString(jsonString);
+
+            // Print the JSON string to verify it's loading correctly
+            Serial.println("JSON string loaded from Firebase:");
+            Serial.println(jsonString);
+
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, jsonString);
+
+            // Set the tick labels for the X axis
+            lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 5, doc.size(), 1, true, 50); // Set the tick count to the number of books
+
+            // Set the point count to the number of books
+            lv_chart_set_point_count(chart, doc.size());
+
+            // For each book, calculate the percentage of pages read and add a series to the chart
+            for(JsonPair kv : doc.as<JsonObject>()) {
+                String book_key = kv.key().c_str(); // Get the book key
+                book_keys.push_back(book_key.c_str()); // Store the book key for later use
+                JsonObject libro = kv.value().as<JsonObject>();
+
+                // Calculate the percentage of pages read
+                int paginas_total = libro["paginas_total"].as<int>();
+                int pagina_actual = libro["pagina_actual"].as<int>();
+                float porcentaje = ((float)pagina_actual / paginas_total) * 100;
+
+                // Multiplica el porcentaje por 10 para mostrar un decimal
+                //int porcentaje_ajustado = round(porcentaje * 10);
+
+                // Añade el porcentaje ajustado a la serie del gráfico
+                lv_chart_set_next_value(chart, ser, porcentaje);
+
+                // Print the book data to verify they're being processed correctly
+                Serial.println("Book data processed:");
+                Serial.print("Key: ");
+                Serial.println(book_key);
+                Serial.print("Total pages: ");
+                Serial.println(paginas_total);
+                Serial.print("Current page: ");
+                Serial.println(pagina_actual);
+                Serial.print("Percentage: ");
+                Serial.println(porcentaje);
+
+                // Add a series to the chart with the calculated percentage
+                //lv_chart_set_next_value(chart, ser, porcentaje);
+
+                // Create a label for the book title and position it below the chart
+                lv_obj_t * label = lv_label_create(screen2);
+                lv_label_set_text_fmt(label, "%s: %s", book_key.c_str(), libro["titulo"].as<const char*>());
+                lv_obj_set_pos(label, 10, 300 + 20 * book_index); // Position the label below the chart
+
+                book_index++; // Increment the book index
+            }
+        }
+    }
+
+    lv_chart_refresh(chart); // Required after direct set
+
+
+
+
+    lv_obj_t * symbol = lv_label_create(screen2);
+    lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+    create_button(screen2, symbol, BUTTON_STYLE_GREEN, back_to_main_menu, 95, 310);
+
+}
+
+
+// Manejador de eventos para el botón que cambia a la pantalla secundaria de tab4
+void go_to_screen2_tab4(lv_event_t * e) {
+    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
+    scr_principal = main_screen;
+    create_second_screen_tab4(main_screen);
+}
+
+
+static void draw_label_x_axis(lv_event_t * e) {
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+    if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
+
+    if(dsc->id == LV_CHART_AXIS_PRIMARY_X && dsc->text) {
+        lv_snprintf(dsc->text, dsc->text_length, "%s", book_keys[dsc->value % book_keys.size()].c_str());
+    }
+}
+
+static void draw_label_y_axis(lv_event_t * e) {
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+    if(!lv_obj_draw_part_check_type(dsc, &lv_chart_class, LV_CHART_DRAW_PART_TICK_LABEL)) return;
+
+    if(dsc->id == LV_CHART_AXIS_PRIMARY_Y && dsc->text) {
+        lv_snprintf(dsc->text, dsc->text_length, "%d%%", dsc->value);
+    }
+}
+
+
+
+
