@@ -33,44 +33,6 @@ void go_to_screen2_tab2(lv_event_t * e);
 void create_second_screen(lv_obj_t *padre);
 static void go_to_screen2(lv_event_t * e);
 
-/*
-class Book {
-public:
-    String title;
-    String author;
-    String pages;
-    String isbn;
-    //int current_page;
-    bool found; // Añade esta línea
-
-    Book(String title, String author, String pages, String isbn, bool found = false)
-        : title(title), author(author), pages(pages), isbn(isbn), found(found) {}
-
-    int getCurrentPage() {
-        return NVS.getInt(isbn);
-    }
-
-    void setCurrentPage(int page) {
-        NVS.setInt(isbn, page);
-    }
-};*/
-
-/*
-// Crear los objetos Book de antemano
-extern Book book1;
-extern Book book2;
-extern Book book3;
-extern Book book4;
-extern Book book5;
-extern Book bookNotFound;
-
-extern Book book_array[6];*/
-
-// Declaración de selected_isbn como variable global
-//extern String selected_isbn;
-
-//Book get_book_by_isbn(const String& isbn);
-//Book* search_by_isbn(const String& isbn);
 void set_book_number();
 extern String get_book_number();
 void show_numeric_keyboard(lv_obj_t * label);

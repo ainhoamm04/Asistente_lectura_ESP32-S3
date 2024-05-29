@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ArduinoNvs.h>
+//#include <ArduinoNvs.h>
 #include "display.h"
 #include <lvgl.h>
 #include <TFT_eSPI.h>
@@ -9,48 +9,13 @@
 #include "camera_ui.h"
 #include "firebase_config.h"
 
-
-#include <WiFi.h>
 #include <Firebase_ESP_Client.h>
-/*
-#define DATABASE_URL "https://asistente-lectura-esp32-s3-default-rtdb.europe-west1.firebasedatabase.app/"
-#define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"
-#define USER_EMAIL "amm00384@red.ujaen.es"
-#define USER_PASSWORD "frbs_4"
-#define WIFI_SSID "vodafoneAAP8ZC"
-#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
-
-//#define WIFI_SSID "Xiaomi_Ainhoa"
-//#define WIFI_PASSWORD "cobw4192"
-
-//#define WIFI_SSID "telema2"
-//#define WIFI_PASSWORD "teleco2015"
-
-//#define WIFI_SSID "iPhone 12 LR"
-//#define WIFI_PASSWORD "teleco2015"
- */
-
-#include <ArduinoJson.h> // Include the ArduinoJson library
+#include <ArduinoJson.h>
 #include <FirebaseJson.h>
 
-// Provide the token generation process info.
-//#include <addons/TokenHelper.h>
-// Provide the RTDB payload printing info and other helper functions.
-//#include <addons/RTDBHelper.h>
 
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
-// Define Firebase Data object
-/*
-FirebaseData fbdo;
-FirebaseAuth auth;
-FirebaseConfig config;
-unsigned long sendDataPrevMillis = 0;
-unsigned long count = 0;
-bool signupOK = false;
-bool libraryLoaded = false;
-String path = "/libros";*/
-
 Display screen;
 
 lv_obj_t *scr_principal;
@@ -96,8 +61,6 @@ void create_second_screen_tab4(lv_obj_t *padre);
 void go_to_screen2_tab4(lv_event_t * e);
 static void draw_label_x_axis(lv_event_t * e);
 static void draw_label_y_axis(lv_event_t * e);
-int reto_pag_mes = 300;
-
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -106,46 +69,7 @@ void setup() {
     // Configuración y conexión de Firebase
     setup_firebase();
 
-    /*
-    //--------------------Configuración y conexión Firebase---------------------
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("Connecting to Wi-Fi");
-    while (WiFi.status() != WL_CONNECTED){
-        Serial.print(".");
-        delay(300);
-    }
-    Serial.println("Connected with IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
-
-    Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
-
-    //Assign the api key (required)
-    config.api_key = API_KEY;
-    //Assign the user sign in credentials
-    auth.user.email = USER_EMAIL;
-    auth.user.password = USER_PASSWORD;
-    //Assign the RTDB URL (required)
-    config.database_url = DATABASE_URL;
-
-    //Sign up
-    if (Firebase.signUp(&config, &auth, "", "")){
-        Serial.println("SIGN UP CORRECT");
-        signupOK = true;
-    }
-    else{
-        Serial.printf("%s\n", config.signer.signupError.message.c_str());
-    }
-
-    //Assign the callback function for the long running token generation task
-    config.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
-
-    Firebase.begin(&config, &auth);
-    Firebase.reconnectWiFi(true);
-    //-------------------------------------------------------------------------------------
-    */
-
-    NVS.begin();
+    //NVS.begin();
 
     sdcard_init();
     camera_init();
@@ -153,7 +77,7 @@ void setup() {
 
     tab_function();
 
-    searchIsbnInDatabase();
+    //searchIsbnInDatabase();
 }
 
 
@@ -686,25 +610,12 @@ void tab3_content(lv_obj_t * parent) {
 void create_second_screen_tab3(lv_obj_t *padre) {
 
     lv_obj_t * screen2 = lv_obj_create(NULL);
-    //lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    //lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFC97A), 0);
     lv_scr_load(screen2);
 
     // Inicializa la interfaz de usuario de la cámara
     setup_scr_camera(&guider_camera_ui);
     // Carga la interfaz de usuario de la cámara en la pantalla
     lv_scr_load(guider_camera_ui.camera);
-
-    /*
-    lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "Hola, has cambiado de pantalla");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
-
-    lv_obj_t * symbol = lv_label_create(screen2);
-    lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
-    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);*/
-
-    //create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 110);
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab3
@@ -713,11 +624,6 @@ static void go_to_screen2_tab3(lv_event_t * e) {
     scr_principal = main_screen;
     create_second_screen_tab3(main_screen);
 }
-
-
-
-
-
 
 
 
@@ -747,21 +653,18 @@ static void tab4_content(lv_obj_t * parent) {
 
             // Create containers for each book status
             lv_obj_t * container_unstarted = lv_obj_create(parent);
-            //lv_obj_set_size(container_unstarted, LV_HOR_RES, 50);
             lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 200);
             lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
             lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
             lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
 
             lv_obj_t * container_in_progress = lv_obj_create(parent);
-            //lv_obj_set_size(container_in_progress, LV_HOR_RES, 100);
             lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 200 + 100);
             lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
             lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
             lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
 
             lv_obj_t * container_finished = lv_obj_create(parent);
-            //lv_obj_set_size(container_finished, LV_HOR_RES, 150);
             lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 300 + 100);
             lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
             lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
@@ -907,7 +810,6 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCEF2D8), 0);
     lv_scr_load(screen2);
 
-
     lv_obj_t * chart = lv_chart_create(screen2);
 
     // Incrementa la posición en el eje X en 10px
@@ -989,9 +891,6 @@ void create_second_screen_tab4(lv_obj_t *padre) {
                 int pagina_actual = libro["pagina_actual"].as<int>();
                 float porcentaje = ((float)pagina_actual / paginas_total) * 100;
 
-                // Multiplica el porcentaje por 10 para mostrar un decimal
-                //int porcentaje_ajustado = round(porcentaje * 10);
-
                 // Añade el porcentaje ajustado a la serie del gráfico
                 lv_chart_set_next_value(chart, ser, porcentaje);
 
@@ -1005,12 +904,6 @@ void create_second_screen_tab4(lv_obj_t *padre) {
                 Serial.println(pagina_actual);
                 Serial.print("Percentage: ");
                 Serial.println(porcentaje);
-
-                // Add a series to the chart with the calculated percentage
-                //lv_chart_set_next_value(chart, ser, porcentaje);
-
-
-
 
 
                 // Create a label for the book key and add it to the container
@@ -1027,32 +920,12 @@ void create_second_screen_tab4(lv_obj_t *padre) {
 
                 label_y_pos += 45;
 
-
-                /*
-                // Create a label for the book key and position it below the chart
-                lv_obj_t * label_key = lv_label_create(screen2);
-                lv_label_set_text(label_key, book_key.c_str());
-                lv_obj_set_style_text_font(label_key, &ubuntu_bold_16, 0);
-                lv_obj_set_pos(label_key, 10, legend_pos);
-
-                // Create a label for the book title and position it 20px below the key label
-                lv_obj_t * label_title = lv_label_create(screen2);
-                lv_label_set_text(label_title, libro["titulo"].as<const char*>());
-                lv_obj_set_style_text_font(label_title, &ubuntu_regular_16, 0);
-                lv_obj_set_pos(label_title, 10, legend_pos + 20);
-
-                legend_pos += 45; // Incrementa la posición en y para la próxima etiqueta
-                */
-
                 book_index++; // Increment the book index
             }
         }
     }
 
     lv_chart_refresh(chart); // Required after direct set
-
-
-
 
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
@@ -1063,7 +936,6 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_t * space = lv_label_create(screen2);
     lv_label_set_text(space, "\n\n");
     lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 590);
-
 }
 
 
