@@ -89,7 +89,7 @@ void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
 
-    //Firebase.ready();
+    Firebase.ready();
 }
 
 
@@ -570,19 +570,22 @@ static void tab4_content(lv_obj_t * parent) {
 
     // Create containers for each book status
     lv_obj_t * container_unstarted = lv_obj_create(parent);
-    lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 200);
+    lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 210);
+    lv_obj_set_size(container_unstarted, 210, 100);
     lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
 
     lv_obj_t * container_in_progress = lv_obj_create(parent);
-    lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 200 + 100);
+    lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 210 + 100);
+    lv_obj_set_size(container_in_progress, 210, 100);
     lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
 
     lv_obj_t * container_finished = lv_obj_create(parent);
-    lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 300 + 100);
+    lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 310 + 100);
+    lv_obj_set_size(container_finished, 210, 100);
     lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_finished, 2, LV_PART_MAIN);
@@ -646,31 +649,6 @@ static void tab4_content(lv_obj_t * parent) {
     }
 
 
-    if(count_in_progress == 1 || count_in_progress == 0) {
-        int minHeight = 75; // Altura mínima del contenedor
-        lv_obj_set_size(container_in_progress, 210, minHeight);
-    } else {
-        int containerHeight = 50 * count_unstarted;
-        lv_obj_set_size(container_in_progress, 210, containerHeight);
-    }
-
-    if(count_unstarted == 1 || count_unstarted == 0) {
-        int minHeight = 75; // Altura mínima del contenedor
-        lv_obj_set_size(container_unstarted, 210, minHeight);
-    } else {
-        int containerHeight = 50 * count_unstarted;
-        lv_obj_set_size(container_unstarted, 210, containerHeight);
-    }
-
-    if(count_finished == 1 || count_finished == 0) {
-        int minHeight = 75; // Altura mínima del contenedor
-        lv_obj_set_size(container_finished, 210, minHeight);
-    } else {
-        int containerHeight = 50 * count_unstarted;
-        lv_obj_set_size(container_finished, 210, containerHeight);
-    }
-
-
     Serial.println("\n" + String(count_finished) + "\n");
     Serial.println("\n" + String(count_unstarted) + "\n");
     Serial.println("\n" + String(count_in_progress) + "\n");
@@ -713,7 +691,7 @@ static void tab4_content(lv_obj_t * parent) {
     lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 500);
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 530);
 
 }
 
