@@ -13,10 +13,10 @@ extern camera_fb_t *fb;
 
 typedef struct lvgl_camera
 {
-	lv_obj_t *camera;
-	lv_obj_t *camera_video;
-	lv_obj_t *camera_imgbtn_photo;
-	lv_obj_t *camera_imgbtn_home;
+    lv_obj_t *camera;
+    lv_obj_t *camera_video;
+    lv_obj_t *camera_imgbtn_photo;
+    lv_obj_t *camera_imgbtn_home;
 }lvgl_camera_ui;
 
 extern lv_img_dsc_t photo_show;              //apply an lvgl image variable
@@ -39,12 +39,5 @@ void show_numeric_keyboard(lv_obj_t * label);
 extern int camera_button_press_count;
 
 void searchIsbnInDatabase();
-extern String book_key;
-extern bool book_found;
-extern String title;
-extern String author;
-extern int totalPages;
-extern int currentPage;
-
 
 #endif

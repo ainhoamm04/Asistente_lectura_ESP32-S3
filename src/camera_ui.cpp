@@ -13,64 +13,73 @@ camera_fb_t *fb_buf = NULL;
 TaskHandle_t cameraTaskHandle;    //camera thread task handle
 static int camera_task_flag = 0;  //camera thread running flag
 
+
+bool book_found = false;
+String book_key;
+String title;
+String author;
+int totalPages;
+int currentPage;
+
+
 //Create camera task thread
 void create_camera_task(void) {
-  if (camera_task_flag == 0) {
-    camera_task_flag = 1;
-    ui_set_photo_show();
-    //disableCore0WDT();
-    xTaskCreate(loopTask_camera, "loopTask_camera", 8192, NULL, 1, &cameraTaskHandle);
-  } else {
-    Serial.println("loopTask_camera is running...");
-  }
+    if (camera_task_flag == 0) {
+        camera_task_flag = 1;
+        ui_set_photo_show();
+        //disableCore0WDT();
+        xTaskCreate(loopTask_camera, "loopTask_camera", 8192, NULL, 1, &cameraTaskHandle);
+    } else {
+        Serial.println("loopTask_camera is running...");
+    }
 }
 
 //Close the camera thread
 void stop_camera_task(void) {
-  if (camera_task_flag == 1) {
-    camera_task_flag = 0;
-    while (1) {
-      if (eTaskGetState(cameraTaskHandle) == eDeleted) {
-        break;
-      }
-      vTaskDelay(10);
+    if (camera_task_flag == 1) {
+        camera_task_flag = 0;
+        while (1) {
+            if (eTaskGetState(cameraTaskHandle) == eDeleted) {
+                break;
+            }
+            vTaskDelay(10);
+        }
+        Serial.println("loopTask_camera deleted!");
     }
-    Serial.println("loopTask_camera deleted!");
-  }
 }
 
 //camera thread
 void loopTask_camera(void *pvParameters) {
-  Serial.println("loopTask_camera start...");
-  while (camera_task_flag) {
-    fb = esp_camera_fb_get();
-    fb_buf = fb;
-    esp_camera_fb_return(fb);
-    if (fb_buf != NULL) {
-      for (int i = 0; i < fb_buf->len; i += 2) {
-        uint8_t temp = 0;
-        temp = fb_buf->buf[i];
-        fb_buf->buf[i] = fb_buf->buf[i + 1];
-        fb_buf->buf[i + 1] = temp;
-      }
-      photo_show.data = fb_buf->buf;
-      lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
-      //cargar aqui programa leer codigo de barras
+    Serial.println("loopTask_camera start...");
+    while (camera_task_flag) {
+        fb = esp_camera_fb_get();
+        fb_buf = fb;
+        esp_camera_fb_return(fb);
+        if (fb_buf != NULL) {
+            for (int i = 0; i < fb_buf->len; i += 2) {
+                uint8_t temp = 0;
+                temp = fb_buf->buf[i];
+                fb_buf->buf[i] = fb_buf->buf[i + 1];
+                fb_buf->buf[i + 1] = temp;
+            }
+            photo_show.data = fb_buf->buf;
+            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
+            //cargar aqui programa leer codigo de barras
+        }
     }
-  }
-  vTaskDelete(cameraTaskHandle);
+    vTaskDelete(cameraTaskHandle);
 }
 
 //Initialize an lvgl image variable
 void ui_set_photo_show(void) {
-  lv_img_header_t header;
-  header.always_zero = 0;
-  header.w = 240;
-  header.h = 240;
-  header.cf = LV_IMG_CF_TRUE_COLOR;
-  photo_show.header = header;
-  photo_show.data_size = 240 * 240 * 2;
-  photo_show.data = NULL;
+    lv_img_header_t header;
+    header.always_zero = 0;
+    header.w = 240;
+    header.h = 240;
+    header.cf = LV_IMG_CF_TRUE_COLOR;
+    photo_show.header = header;
+    photo_show.data_size = 240 * 240 * 2;
+    photo_show.data = NULL;
 }
 
 
@@ -219,12 +228,7 @@ String get_book_number() {
 }
 
 
-bool book_found = false;
-String book_key;
-String title;
-String author;
-int totalPages;
-int currentPage;
+
 
 void searchIsbnInDatabase() {
     // Obtén el ISBN aleatorio
@@ -233,47 +237,34 @@ void searchIsbnInDatabase() {
     // Inicializa book_found a false
     book_found = false;
 
-    // Intenta obtener todos los libros desde Firebase
-    if (Firebase.RTDB.get(&fbdo, "/libros")) {
-        if (fbdo.dataType() == "json") {
-            FirebaseJson* json = fbdo.jsonObjectPtr();
-            String jsonString;
-            json->toString(jsonString);
+    // Llama a la función get_book_data() en firebase_config.cpp
+    DynamicJsonDocument doc = get_book_data();
 
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, jsonString);
+    // Recorre todos los libros en la base de datos
+    for(JsonPair kv : doc.as<JsonObject>()) {
+        // Compara el ISBN de cada libro con el ISBN aleatorio
+        String isbn = kv.value()["isbn"].as<String>();
+        if (isbn == randomIsbn) {
+            book_found = true;
 
-            // Recorre todos los libros en la base de datos
-            for(JsonPair kv : doc.as<JsonObject>()) {
-                // Compara el ISBN de cada libro con el ISBN aleatorio
-                String isbn = kv.value()["isbn"].as<String>();
-                if (isbn == randomIsbn) {
-                    book_found = true;
+            // Almacena la clave del libro
+            book_key = kv.key().c_str();
 
-                    // Almacena la clave del libro
-                    book_key = kv.key().c_str();
+            // Si encuentras un libro con el mismo ISBN, guarda los datos
+            title = kv.value()["titulo"].as<String>();
+            author = kv.value()["autor"].as<String>();
+            totalPages = kv.value()["paginas_total"].as<int>();
+            currentPage = kv.value()["pagina_actual"].as<int>();
 
-                    // Si encuentras un libro con el mismo ISBN, guarda los datos
-                    title = kv.value()["titulo"].as<String>();
-                    author = kv.value()["autor"].as<String>();
-                    totalPages = kv.value()["paginas_total"].as<int>();
-                    currentPage = kv.value()["pagina_actual"].as<int>();
-
-                    // Aquí puedes hacer lo que necesites con los datos del libro
-                    // Por ejemplo, podrías imprimirlos en la consola
-                    Serial.println("Libro encontrado:");
-                    Serial.println("Titulo: " + title);
-                    Serial.println("Autor: " + author);
-                    Serial.println("Paginas totales: " + String(totalPages));
-                    Serial.println("Pagina actual: " + String(currentPage));
-                    break;
-                }
-            }
-        } else {
-            Serial.println("Los datos recuperados no son de tipo JSON.");
+            // Aquí puedes hacer lo que necesites con los datos del libro
+            // Por ejemplo, podrías imprimirlos en la consola
+            Serial.println("Libro encontrado:");
+            Serial.println("Titulo: " + title);
+            Serial.println("Autor: " + author);
+            Serial.println("Paginas totales: " + String(totalPages));
+            Serial.println("Pagina actual: " + String(currentPage));
+            break;
         }
-    } else {
-        Serial.println("Fallo al recuperar datos de Firebase.");
     }
 
     // Si no se encontró el libro, imprime "Libro no encontrado"
@@ -309,9 +300,9 @@ void show_numeric_keyboard(lv_obj_t * label) {
 
     /*Set the relative width of the buttons and other controls*/
     static const lv_btnmatrix_ctrl_t kb_ctrl[] = {1, 1, 1, 2,
-                                                     1, 1, 1, 2,
-                                                     1, 1, 1, 2,
-                                                     3, 1, 1
+                                                  1, 1, 1, 2,
+                                                  1, 1, 1, 2,
+                                                  3, 1, 1
     };
 
     /*Create a keyboard and add the new map as USER_1 mode*/
@@ -356,7 +347,8 @@ static void keyboard_event_cb(lv_event_t * e) {
         currentPage = number;
 
         // Actualizar el valor de currentPage en la base de datos
-        Firebase.RTDB.setInt(&fbdo, "/libros/" + book_key + "/pagina_actual", currentPage);
+        //Firebase.RTDB.setInt(&fbdo, "/libros/" + book_key + "/pagina_actual", currentPage);
+        update_current_page(book_key.c_str(), currentPage);
 
         char buffer[32];
         sprintf(buffer, "Página actual: %d", number);
@@ -377,7 +369,7 @@ static void keyboard_event_cb(lv_event_t * e) {
 
 //Click the logo icon, callback function: goes to the main ui interface
 static void camera_imgbtn_home_event_handler(lv_event_t *e) {
-  lv_event_code_t code = lv_event_get_code(e);
+    lv_event_code_t code = lv_event_get_code(e);
 
     if (code == LV_EVENT_CLICKED) {
         stop_camera_task();
@@ -390,44 +382,44 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
 
 //Parameter configuration function on the camera screen
 void setup_scr_camera(lvgl_camera_ui *ui) {
-  //Write codes camera
-  ui->camera = lv_obj_create(NULL);
-  setup_list_head_picture();  //Generate a linked list based on the SD card's picture folder
-  lv_img_home_init();
-  lv_img_camera_init();
+    //Write codes camera
+    ui->camera = lv_obj_create(NULL);
+    setup_list_head_picture();  //Generate a linked list based on the SD card's picture folder
+    lv_img_home_init();
+    lv_img_camera_init();
 
-  static lv_style_t bg_style;
-  lv_style_init(&bg_style);
-  lv_style_set_bg_color(&bg_style, lv_color_hex(0xffffff));
-  lv_obj_add_style(ui->camera, &bg_style, LV_PART_MAIN);
+    static lv_style_t bg_style;
+    lv_style_init(&bg_style);
+    lv_style_set_bg_color(&bg_style, lv_color_hex(0xffffff));
+    lv_obj_add_style(ui->camera, &bg_style, LV_PART_MAIN);
 
-  /*Init the pressed style*/
-  static lv_style_t style_pr;              //Apply for a style
-  lv_style_init(&style_pr);                //Initialize it
-  lv_style_set_translate_y(&style_pr, 5);  //Style: Every time you trigger, move down 5 pixels
+    /*Init the pressed style*/
+    static lv_style_t style_pr;              //Apply for a style
+    lv_style_init(&style_pr);                //Initialize it
+    lv_style_set_translate_y(&style_pr, 5);  //Style: Every time you trigger, move down 5 pixels
 
-  //Write codes camera_video
-  ui->camera_video = lv_img_create(ui->camera);
-  lv_obj_set_pos(ui->camera_video, 0, 0);
-  lv_obj_set_size(ui->camera_video, 240, 240);
+    //Write codes camera_video
+    ui->camera_video = lv_img_create(ui->camera);
+    lv_obj_set_pos(ui->camera_video, 0, 0);
+    lv_obj_set_size(ui->camera_video, 240, 240);
 
-  //Write codes camera_photo
-  ui->camera_imgbtn_photo = lv_imgbtn_create(ui->camera);
-  lv_obj_set_pos(ui->camera_imgbtn_photo, 20, 240);
-  lv_obj_set_size(ui->camera_imgbtn_photo, 80, 80);
-  lv_img_set_src(ui->camera_imgbtn_photo, &img_camera);
-  lv_obj_add_style(ui->camera_imgbtn_photo, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
+    //Write codes camera_photo
+    ui->camera_imgbtn_photo = lv_imgbtn_create(ui->camera);
+    lv_obj_set_pos(ui->camera_imgbtn_photo, 20, 240);
+    lv_obj_set_size(ui->camera_imgbtn_photo, 80, 80);
+    lv_img_set_src(ui->camera_imgbtn_photo, &img_camera);
+    lv_obj_add_style(ui->camera_imgbtn_photo, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
 
-  //Write codes camera_return
-  ui->camera_imgbtn_home = lv_imgbtn_create(ui->camera);
-  lv_obj_set_pos(ui->camera_imgbtn_home, 140, 240);
-  lv_obj_set_size(ui->camera_imgbtn_home, 80, 80);
-  lv_img_set_src(ui->camera_imgbtn_home, &img_home);
-  lv_obj_add_style(ui->camera_imgbtn_home, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
+    //Write codes camera_return
+    ui->camera_imgbtn_home = lv_imgbtn_create(ui->camera);
+    lv_obj_set_pos(ui->camera_imgbtn_home, 140, 240);
+    lv_obj_set_size(ui->camera_imgbtn_home, 80, 80);
+    lv_img_set_src(ui->camera_imgbtn_home, &img_home);
+    lv_obj_add_style(ui->camera_imgbtn_home, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
 
-  lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
-  lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
-  //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
-  create_camera_task();
+    lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
+    //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
+    create_camera_task();
 }
 

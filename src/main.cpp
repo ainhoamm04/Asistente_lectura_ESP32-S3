@@ -59,6 +59,8 @@ void initialize_and_load_camera();
 static void tab4_content(lv_obj_t * parent);
 void create_second_screen_tab4(lv_obj_t *padre);
 void go_to_screen2_tab4(lv_event_t * e);
+static void event_handler_bottom(lv_event_t * e);
+static void event_handler_top(lv_event_t * e);
 static void draw_label_x_axis(lv_event_t * e);
 static void draw_label_y_axis(lv_event_t * e);
 
@@ -390,47 +392,34 @@ void tab2_content(lv_obj_t * parent) {
     if (!libraryLoaded && Firebase.ready()) {
         libraryLoaded = true;
 
-        if (Firebase.RTDB.get(&fbdo, "/libros")) {
-            if (fbdo.dataType() == "json") {
-                FirebaseJson* json = fbdo.jsonObjectPtr();
-                String jsonString;
-                json->toString(jsonString);
+        DynamicJsonDocument doc = get_book_data();
+        if (!doc.isNull()) {
+            // Obtiene el número total de libros antes de entrar en el bucle
+            int num_books = doc.as<JsonObject>().size();
+            int list_height = num_books * 40;
+            lv_obj_set_size(list, 230, list_height);
+            lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
 
-                DynamicJsonDocument doc(1024);
-                deserializeJson(doc, jsonString);
+            for(JsonPair kv : doc.as<JsonObject>()) {
+                String key = kv.key().c_str();
+                char* keyCopy = new char[key.length() + 1]; // Crear un nuevo array de caracteres en la memoria dinámica
+                strcpy(keyCopy, key.c_str()); // Copiar la clave en el nuevo array de caracteres
+                //keys.push_back(std::string(key.c_str())); // Convert Arduino String to std::string
 
-                // Obtiene el número total de libros antes de entrar en el bucle
-                int num_books = doc.as<JsonObject>().size();
-                int list_height = num_books * 40;
-                lv_obj_set_size(list, 230, list_height);
-                lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
+                String title = kv.value()["titulo"].as<String>();
 
-                for(JsonPair kv : doc.as<JsonObject>()) {
-                    String key = kv.key().c_str();
-                    char* keyCopy = new char[key.length() + 1]; // Crear un nuevo array de caracteres en la memoria dinámica
-                    strcpy(keyCopy, key.c_str()); // Copiar la clave en el nuevo array de caracteres
-                    //keys.push_back(std::string(key.c_str())); // Convert Arduino String to std::string
+                lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", title.c_str());
 
-                    String title = kv.value()["titulo"].as<String>();
+                lv_obj_t * label = lv_obj_get_child(btn, NULL);
+                lv_obj_set_style_text_font(label, &bigger_symbols, 0);
 
-                    lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", title.c_str());
-
-                    lv_obj_t * label = lv_obj_get_child(btn, NULL);
-                    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-                    lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                    lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                    lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                    lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
-                }
-            } else {
-                Serial.println(fbdo.errorReason());
-                Serial.println(fbdo.dataType());
-                Serial.println("HA HABIDO UN ERROR, NO TE VOY A MOSTRAR EL LIBRO");
+                lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+                lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+                lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
+                lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
             }
         } else {
             Serial.println("Failed to retrieve data.");
-            Serial.println("Error reason: " + String(fbdo.errorReason()));
         }
     }
 }
@@ -475,101 +464,37 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_obj_set_style_text_font(label_symbols2, &ubuntu_regular_16, 0);
     lv_obj_set_pos(label_symbols2, 0, 290);
 
-    int posY = -90; // Posición inicial en Y para las etiquetas
+    int posY = 25;
 
-    // Construir la ruta específica de los datos del libro
-    String path = "/libros/" + String(key.c_str());
-    Serial.println("\nIntentando recuperar datos desde la ruta: " + path);
+    DynamicJsonDocument doc = get_book_data(key);
+    if (!doc.isNull()) {
+        String titulo = doc["titulo"].as<String>();
+        String autor = doc["autor"].as<String>();
+        int paginas_total = doc["paginas_total"].as<int>();
+        int pagina_actual = doc["pagina_actual"].as<int>();
 
-    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
-        if (fbdo.dataType() == "json") {
-            Serial.println("\nTipo de datos: JSON\n");
-            DynamicJsonDocument doc(1024);
+        // Crear las etiquetas y mostrar los datos del libro
+        lv_obj_t * label_title = lv_label_create(screen2);
+        lv_label_set_text(label_title, titulo.c_str());
+        lv_obj_set_pos(label_title, 10, posY += 30);
+        lv_obj_set_style_text_font(label_title, &bigger_symbols, 0);
+        lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR); // Ajusta el texto para que se pase a la siguiente línea si es demasiado largo
+        lv_obj_set_width(label_title, 225); // Establece el ancho máximo de la etiqueta
 
-            String jsonData = fbdo.jsonData().stringValue;
+        lv_obj_t * label_author = lv_label_create(screen2);
+        lv_label_set_text(label_author, ("Autor: " + autor).c_str());
+        lv_obj_set_pos(label_author, 10, posY += 40);
+        lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
 
-            String pathtitle = "/libros/" + String(key.c_str()) + "/titulo";
-            String pathauthor = "/libros/" + String(key.c_str()) + "/autor";
-            String pathtotalpages = "/libros/" + String(key.c_str()) + "/paginas_total";
-            String pathcurrentpage = "/libros/" + String(key.c_str()) + "/pagina_actual";
+        lv_obj_t * label_total_pages = lv_label_create(screen2);
+        lv_label_set_text(label_total_pages, (String(paginas_total) + " páginas en total").c_str());
+        lv_obj_set_pos(label_total_pages, 10, posY += 25);
+        lv_obj_set_style_text_font(label_total_pages, &ubuntu_italic_16, 0);
 
-            if (Firebase.RTDB.getString(&fbdo, pathtitle.c_str())) { // Intenta obtener el título del libro desde Firebase
-                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
-                    String titulo = fbdo.stringData(); // Almacena el título en una variable
-                    Serial.println("El titulo del libro es: " + titulo); // Imprime el título en el monitor serie
-
-                    label_title = lv_label_create(screen2);
-                    lv_label_set_text(label_title, (titulo).c_str());
-                    lv_obj_set_style_text_font(label_title, &bigger_symbols, 0);
-                    lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR); // Ajusta el texto para que se pase a la siguiente línea si es demasiado largo
-                    lv_obj_set_width(label_title, 225); // Establece el ancho máximo de la etiqueta
-                    lv_obj_align(label_title, LV_ALIGN_LEFT_MID, 15, posY);
-
-                    posY = posY + 40;
-                } else {
-                    Serial.println("Error: los datos obtenidos no son de tipo string");
-                }
-            } else {
-                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
-            }
-
-            if (Firebase.RTDB.getString(&fbdo, pathauthor.c_str())) { // Intenta obtener el título del libro desde Firebase
-                if (fbdo.dataType() == "string") { // Si los datos obtenidos son de tipo string
-                    String autor = fbdo.stringData(); // Almacena el título en una variable
-                    Serial.println("El autor del libro es: " + autor); // Imprime el título en el monitor serie
-
-                    // Crea una etiqueta para el autor
-                    label_author = lv_label_create(screen2);
-                    lv_label_set_text(label_author, ("Autor: " + autor).c_str());
-                    lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
-                    lv_obj_align(label_author, LV_ALIGN_LEFT_MID, 15, posY);
-
-                    posY = posY + 25;
-                } else {
-                    Serial.println("Error: los datos obtenidos no son de tipo string");
-                }
-            } else {
-                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
-            }
-
-            if (Firebase.RTDB.getInt(&fbdo, pathtotalpages.c_str())) { // Intenta obtener el título del libro desde Firebase
-                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
-                    int paginas_total = fbdo.intData(); // Almacena el título en una variable
-                    Serial.println("El numero de paginas total es: " + String(paginas_total)); // Imprime el título en el monitor serie
-
-                    // Crea una etiqueta para el total de páginas
-                    label_total_pages = lv_label_create(screen2);
-                    lv_label_set_text(label_total_pages, (String(paginas_total) + " páginas en total").c_str());
-                    lv_obj_set_style_text_font(label_total_pages, &ubuntu_italic_16, 0);
-                    lv_obj_align(label_total_pages, LV_ALIGN_LEFT_MID, 15, posY);
-
-                    posY = posY + 25;
-                } else {
-                    Serial.println("Error: los datos obtenidos no son de tipo int");
-                }
-            } else {
-                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
-            }
-
-            if (Firebase.RTDB.getInt(&fbdo, pathcurrentpage.c_str())) { // Intenta obtener el título del libro desde Firebase
-                if (fbdo.dataType() == "int") { // Si los datos obtenidos son de tipo string
-                    int pagina_actual = fbdo.intData(); // Almacena el título en una variable
-                    Serial.println("La ultima pagina leida es la: " + String(pagina_actual)); // Imprime el título en el monitor serie
-
-                    // Crea una etiqueta para la página actual
-                    label_current_page = lv_label_create(screen2);
-                    lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());
-                    lv_obj_set_style_text_font(label_current_page, &ubuntu_bold_16, 0);
-                    lv_obj_align(label_current_page, LV_ALIGN_LEFT_MID, 15, posY);
-                } else {
-                    Serial.println("Error: los datos obtenidos no son de tipo int");
-                }
-            } else {
-                Serial.println("Error al obtener los datos desde Firebase: " + fbdo.errorReason()); // Imprime el error
-            }
-        } else {
-            Serial.println("Los datos recuperados no son de tipo JSON.");
-        }
+        lv_obj_t * label_current_page = lv_label_create(screen2);
+        lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());
+        lv_obj_set_pos(label_current_page, 10, posY += 25);
+        lv_obj_set_style_text_font(label_current_page, &ubuntu_bold_16, 0);
     } else {
         Serial.println("Fallo al recuperar datos de Firebase.");
     }
@@ -579,7 +504,6 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
     create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 200);
-
 }
 
 
@@ -640,158 +564,148 @@ static void tab4_content(lv_obj_t * parent) {
     general_title(parent, "MIS ESTADÍSTICAS", TITLE_STYLE_GREEN);
 
     // Get the book data from Firebase
-    if (Firebase.RTDB.get(&fbdo, "/libros")) {
-        if (fbdo.dataType() == "json") {
-            FirebaseJson* json = fbdo.jsonObjectPtr();
-            String jsonString;
-            json->toString(jsonString);
+    DynamicJsonDocument doc = get_book_data(); // Get all books
 
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, jsonString);
+    int total_pages = 0; // Variable para almacenar el total de páginas leídas
 
-            int total_pages = 0; // Variable para almacenar el total de páginas leídas
+    // Create containers for each book status
+    lv_obj_t * container_unstarted = lv_obj_create(parent);
+    lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 200);
+    lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+    lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
+    lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
 
-            // Create containers for each book status
-            lv_obj_t * container_unstarted = lv_obj_create(parent);
-            lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 200);
-            lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
-            lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
-            lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
+    lv_obj_t * container_in_progress = lv_obj_create(parent);
+    lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 200 + 100);
+    lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+    lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
+    lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
 
-            lv_obj_t * container_in_progress = lv_obj_create(parent);
-            lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 200 + 100);
-            lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
-            lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
-            lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
+    lv_obj_t * container_finished = lv_obj_create(parent);
+    lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 300 + 100);
+    lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
+    lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
+    lv_obj_set_style_border_width(container_finished, 2, LV_PART_MAIN);
 
-            lv_obj_t * container_finished = lv_obj_create(parent);
-            lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 300 + 100);
-            lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
-            lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
-            lv_obj_set_style_border_width(container_finished, 2, LV_PART_MAIN);
+    // Create labels for each book status
+    lv_obj_t * label_unstarted = lv_label_create(container_unstarted);
+    lv_label_set_text(label_unstarted, "LIBROS SIN EMPEZAR");
+    lv_obj_set_style_text_font(label_unstarted, &ubuntu_bold_16, 0);
+    lv_obj_align(label_unstarted, LV_ALIGN_TOP_LEFT, 0, 0);
 
-            // Create labels for each book status
-            lv_obj_t * label_unstarted = lv_label_create(container_unstarted);
-            lv_label_set_text(label_unstarted, "LIBROS SIN EMPEZAR");
-            lv_obj_set_style_text_font(label_unstarted, &ubuntu_bold_16, 0);
-            lv_obj_align(label_unstarted, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_t * label_in_progress = lv_label_create(container_in_progress);
+    lv_label_set_text(label_in_progress, "LIBROS A MEDIAS");
+    lv_obj_set_style_text_font(label_in_progress, &ubuntu_bold_16, 0);
+    lv_obj_align(label_in_progress, LV_ALIGN_TOP_LEFT, 0, 0);
 
-            lv_obj_t * label_in_progress = lv_label_create(container_in_progress);
-            lv_label_set_text(label_in_progress, "LIBROS A MEDIAS");
-            lv_obj_set_style_text_font(label_in_progress, &ubuntu_bold_16, 0);
-            lv_obj_align(label_in_progress, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_t * label_finished = lv_label_create(container_finished);
+    lv_label_set_text(label_finished, "LIBROS FINALIZADOS");
+    lv_obj_set_style_text_font(label_finished, &ubuntu_bold_16, 0);
+    lv_obj_align(label_finished, LV_ALIGN_TOP_LEFT, 0, 0);
 
-            lv_obj_t * label_finished = lv_label_create(container_finished);
-            lv_label_set_text(label_finished, "LIBROS FINALIZADOS");
-            lv_obj_set_style_text_font(label_finished, &ubuntu_bold_16, 0);
-            lv_obj_align(label_finished, LV_ALIGN_TOP_LEFT, 0, 0);
+    // Variables to keep track of the number of books in each status
+    int count_unstarted = 0;
+    int count_in_progress = 0;
+    int count_finished = 0;
 
-            // Variables to keep track of the number of books in each status
-            int count_unstarted = 0;
-            int count_in_progress = 0;
-            int count_finished = 0;
+    // Iterate through each book
+    for(JsonPair kv : doc.as<JsonObject>()) {
+        int current_pages = kv.value()["pagina_actual"].as<int>();
+        int total_pages_book = kv.value()["paginas_total"].as<int>();
+        String title = kv.value()["titulo"].as<String>();
 
-            // Iterate through each book
-            for(JsonPair kv : doc.as<JsonObject>()) {
-                int current_pages = kv.value()["pagina_actual"].as<int>();
-                int total_pages_book = kv.value()["paginas_total"].as<int>();
-                String title = kv.value()["titulo"].as<String>();
+        total_pages += current_pages; // Suma las páginas actuales al total
 
-                total_pages += current_pages; // Suma las páginas actuales al total
-
-                if(current_pages > max_pages) {
-                    max_pages = current_pages;
-                    max_pages_book_title = title;
-                }
-
-                // Check the reading status of the book and create the corresponding label
-                lv_obj_t * status_label = NULL;
-                String status_label_text = title;
-
-                if(current_pages == total_pages_book) {
-                    status_label = lv_label_create(container_finished);
-                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_finished + 1));
-                    count_finished++;
-                } else if(current_pages == 0) {
-                    status_label = lv_label_create(container_unstarted);
-                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_unstarted + 1));
-                    count_unstarted++;
-                } else {
-                    float percentage_read = float(current_pages) * 100 / total_pages_book;
-                    status_label_text += " (" + String(percentage_read) + "% leído)";
-                    status_label = lv_label_create(container_in_progress);
-                    lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_in_progress + 1));
-                    count_in_progress++;
-                }
-
-                lv_label_set_text(status_label, status_label_text.c_str());
-                lv_obj_set_style_text_font(status_label, &ubuntu_regular_16, 0);
-            }
-
-
-
-            if(count_in_progress == 1 || count_in_progress == 0) {
-                int minHeight = 75; // Altura mínima del contenedor
-                lv_obj_set_size(container_in_progress, 210, minHeight);
-            } else {
-                int containerHeight = 50 * count_unstarted;
-                lv_obj_set_size(container_in_progress, 210, containerHeight);
-            }
-
-            if(count_unstarted == 1 || count_unstarted == 0) {
-                int minHeight = 75; // Altura mínima del contenedor
-                lv_obj_set_size(container_unstarted, 210, minHeight);
-            } else {
-                int containerHeight = 50 * count_unstarted;
-                lv_obj_set_size(container_unstarted, 210, containerHeight);
-            }
-
-            if(count_finished == 1 || count_finished == 0) {
-                int minHeight = 75; // Altura mínima del contenedor
-                lv_obj_set_size(container_finished, 210, minHeight);
-            } else {
-                int containerHeight = 50 * count_unstarted;
-                lv_obj_set_size(container_finished, 210, containerHeight);
-            }
-
-
-            Serial.println("\n" + String(count_finished) + "\n");
-            Serial.println("\n" + String(count_unstarted) + "\n");
-            Serial.println("\n" + String(count_in_progress) + "\n");
-
-            // Create a label to display the book with the most pages read
-            lv_obj_t * label1 = lv_label_create(parent);
-            lv_label_set_text(label1, "Libro con más páginas leídas");
-            lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
-            lv_obj_align(label1, LV_ALIGN_TOP_LEFT, 0, 50);
-            lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // Añade esta línea
-            lv_obj_set_width(label1, 230); // Ajusta el ancho al de tu contenedor
-
-            lv_obj_t * label11 = lv_label_create(parent);
-            String label1_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
-            lv_label_set_text(label11, label1_text.c_str());
-            lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
-            lv_obj_align(label11, LV_ALIGN_TOP_LEFT, 0, 70);
-            lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP); // Añade esta línea
-            lv_obj_set_width(label11, 230); // Ajusta el ancho al de tu contenedor
-
-            // Create a label to display the total pages read
-            lv_obj_t * label2 = lv_label_create(parent);
-            lv_label_set_text(label2, "Total de páginas leídas (entre todos los libros)");
-            lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
-            lv_obj_align(label2, LV_ALIGN_TOP_LEFT, 0, 125);
-            lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP); // Añade esta línea
-            lv_obj_set_width(label2, 230); // Ajusta el ancho al de tu contenedor
-
-            lv_obj_t * label22 = lv_label_create(parent);
-            String label2_text = String(total_pages) + " páginas";
-            lv_label_set_text(label22, label2_text.c_str());
-            lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
-            lv_obj_align(label22, LV_ALIGN_TOP_LEFT, 0, 168); // Ajusta la posición en Y según sea necesario
-            lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP); // Añade esta línea
-            lv_obj_set_width(label22, 230); // Ajusta el ancho al de tu contenedor
+        if(current_pages > max_pages) {
+            max_pages = current_pages;
+            max_pages_book_title = title;
         }
+
+        // Check the reading status of the book and create the corresponding label
+        lv_obj_t * status_label = NULL;
+        String status_label_text = title;
+
+        if(current_pages == total_pages_book) {
+            status_label = lv_label_create(container_finished);
+            lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_finished + 1));
+            count_finished++;
+        } else if(current_pages == 0) {
+            status_label = lv_label_create(container_unstarted);
+            lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_unstarted + 1));
+            count_unstarted++;
+        } else {
+            float percentage_read = float(current_pages) * 100 / total_pages_book;
+            status_label_text += " (" + String(percentage_read) + "% leído)";
+            status_label = lv_label_create(container_in_progress);
+            lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_in_progress + 1));
+            count_in_progress++;
+        }
+
+        lv_label_set_text(status_label, status_label_text.c_str());
+        lv_obj_set_style_text_font(status_label, &ubuntu_regular_16, 0);
     }
+
+
+    if(count_in_progress == 1 || count_in_progress == 0) {
+        int minHeight = 75; // Altura mínima del contenedor
+        lv_obj_set_size(container_in_progress, 210, minHeight);
+    } else {
+        int containerHeight = 50 * count_unstarted;
+        lv_obj_set_size(container_in_progress, 210, containerHeight);
+    }
+
+    if(count_unstarted == 1 || count_unstarted == 0) {
+        int minHeight = 75; // Altura mínima del contenedor
+        lv_obj_set_size(container_unstarted, 210, minHeight);
+    } else {
+        int containerHeight = 50 * count_unstarted;
+        lv_obj_set_size(container_unstarted, 210, containerHeight);
+    }
+
+    if(count_finished == 1 || count_finished == 0) {
+        int minHeight = 75; // Altura mínima del contenedor
+        lv_obj_set_size(container_finished, 210, minHeight);
+    } else {
+        int containerHeight = 50 * count_unstarted;
+        lv_obj_set_size(container_finished, 210, containerHeight);
+    }
+
+
+    Serial.println("\n" + String(count_finished) + "\n");
+    Serial.println("\n" + String(count_unstarted) + "\n");
+    Serial.println("\n" + String(count_in_progress) + "\n");
+
+    // Create a label to display the book with the most pages read
+    lv_obj_t * label1 = lv_label_create(parent);
+    lv_label_set_text(label1, "Libro con más páginas leídas");
+    lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+    lv_obj_align(label1, LV_ALIGN_TOP_LEFT, 0, 50);
+    lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // Añade esta línea
+    lv_obj_set_width(label1, 230); // Ajusta el ancho al de tu contenedor
+
+    lv_obj_t * label11 = lv_label_create(parent);
+    String label1_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
+    lv_label_set_text(label11, label1_text.c_str());
+    lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
+    lv_obj_align(label11, LV_ALIGN_TOP_LEFT, 0, 70);
+    lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP); // Añade esta línea
+    lv_obj_set_width(label11, 230); // Ajusta el ancho al de tu contenedor
+
+    // Create a label to display the total pages read
+    lv_obj_t * label2 = lv_label_create(parent);
+    lv_label_set_text(label2, "Total de páginas leídas (entre todos los libros)");
+    lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
+    lv_obj_align(label2, LV_ALIGN_TOP_LEFT, 0, 125);
+    lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP); // Añade esta línea
+    lv_obj_set_width(label2, 230); // Ajusta el ancho al de tu contenedor
+
+    lv_obj_t * label22 = lv_label_create(parent);
+    String label2_text = String(total_pages) + " páginas";
+    lv_label_set_text(label22, label2_text.c_str());
+    lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
+    lv_obj_align(label22, LV_ALIGN_TOP_LEFT, 0, 168); // Ajusta la posición en Y según sea necesario
+    lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP); // Añade esta línea
+    lv_obj_set_width(label22, 230); // Ajusta el ancho al de tu contenedor
 
 
     //Botón para ir a pantalla que muestra gráfica
@@ -813,9 +727,9 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_t * chart = lv_chart_create(screen2);
 
     // Incrementa la posición en el eje X en 10px
-    lv_obj_set_pos(chart, 55, 340);
+    lv_obj_set_pos(chart, 55, 370);
 
-    lv_obj_set_size(chart, 160, 195);
+    lv_obj_set_size(chart, 160, 180);
     lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100); // Set the range from 0 to 100
     lv_obj_add_event_cb(chart, draw_label_x_axis, LV_EVENT_DRAW_PART_BEGIN, NULL);
@@ -840,89 +754,122 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     int book_index = 0; // Book index
 
     // Get the book data from Firebase
-    if (Firebase.RTDB.get(&fbdo, "/libros")) {
-        if (fbdo.dataType() == "json") {
-            FirebaseJson *json = fbdo.jsonObjectPtr();
-            String jsonString;
-            json->toString(jsonString);
+    DynamicJsonDocument doc = get_book_data(); // Get all books
 
-            // Print the JSON string to verify it's loading correctly
-            Serial.println("JSON string loaded from Firebase:");
-            Serial.println(jsonString);
+    // Set the tick labels for the X axis
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 5, doc.size(), 1, true, 50); // Set the tick count to the number of books
 
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, jsonString);
+    // Set the point count to the number of books
+    lv_chart_set_point_count(chart, doc.size());
 
-            // Set the tick labels for the X axis
-            lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 5, 5, doc.size(), 1, true, 50); // Set the tick count to the number of books
+    int label_y_pos = 30; // Initialize the y position for the first label
+    int legend_pos = 20; // Position of the legend labels
 
-            // Set the point count to the number of books
-            lv_chart_set_point_count(chart, doc.size());
-
-
-            int label_y_pos = 30; // Initialize the y position for the first label
-            int legend_pos = 20; // Position of the legend labels
-
-            // Create a container for the labels
-            lv_obj_t * container = lv_obj_create(screen2);
-            lv_obj_set_size(container, 210, 270); // Set the container size
-            lv_obj_set_style_bg_color(container, lv_color_hex(0xCEF2D8), LV_PART_MAIN); // Set the background color to match the screen
-            lv_obj_set_style_border_color(container, lv_color_hex(0x25B619), LV_PART_MAIN); // Set the border color to green
-            lv_obj_set_style_border_width(container, 2, LV_PART_MAIN); // Set the border width
-            lv_obj_set_pos(container, 10, legend_pos); // Set the position of the container
-
-            lv_obj_t * down_symbol = lv_label_create(screen2);
-            lv_label_set_text(down_symbol, LV_SYMBOL_DOWN);
-            lv_obj_set_pos(down_symbol, 110, 295);
-
-            lv_obj_t * label = lv_label_create(container);
-            lv_label_set_text(label, "-----------LEYENDA-----------");
-            lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
-            lv_obj_set_pos(label, 0, 0);
-
-            // For each book, calculate the percentage of pages read and add a series to the chart
-            for(JsonPair kv : doc.as<JsonObject>()) {
-                String book_key = kv.key().c_str(); // Get the book key
-                book_keys.push_back(book_key.c_str()); // Store the book key for later use
-                JsonObject libro = kv.value().as<JsonObject>();
-
-                // Calculate the percentage of pages read
-                int paginas_total = libro["paginas_total"].as<int>();
-                int pagina_actual = libro["pagina_actual"].as<int>();
-                float porcentaje = ((float)pagina_actual / paginas_total) * 100;
-
-                // Añade el porcentaje ajustado a la serie del gráfico
-                lv_chart_set_next_value(chart, ser, porcentaje);
-
-                // Print the book data to verify they're being processed correctly
-                Serial.println("Book data processed:");
-                Serial.print("Key: ");
-                Serial.println(book_key);
-                Serial.print("Total pages: ");
-                Serial.println(paginas_total);
-                Serial.print("Current page: ");
-                Serial.println(pagina_actual);
-                Serial.print("Percentage: ");
-                Serial.println(porcentaje);
+    // Create a container for the labels
+    lv_obj_t * container = lv_obj_create(screen2);
+    lv_obj_set_size(container, 210, 250); // Set the container size
+    lv_obj_set_style_bg_color(container, lv_color_hex(0xCEF2D8), LV_PART_MAIN); // Set the background color to match the screen
+    lv_obj_set_style_border_color(container, lv_color_hex(0x25B619), LV_PART_MAIN); // Set the border color to green
+    lv_obj_set_style_border_width(container, 2, LV_PART_MAIN); // Set the border width
+    lv_obj_set_pos(container, 13, legend_pos); // Set the position of the container
 
 
-                // Create a label for the book key and add it to the container
-                lv_obj_t * label_key = lv_label_create(container);
-                lv_label_set_text(label_key, book_key.c_str());
-                lv_obj_set_style_text_font(label_key, &ubuntu_bold_16, 0);
-                lv_obj_set_pos(label_key, 0, label_y_pos); // Position the label at the current y position
 
-                // Create a label for the book title and add it to the container
-                lv_obj_t * label_title = lv_label_create(container);
-                lv_label_set_text(label_title, libro["titulo"].as<const char*>());
-                lv_obj_set_style_text_font(label_title, &ubuntu_regular_16, 0);
-                lv_obj_set_pos(label_title, 0, label_y_pos + 20); // Position the label 20px below the key label
+    //Botón para desplazar pantalla hacia abajo automáticamente
+    lv_obj_t * down_button = lv_btn_create(screen2);
+    lv_obj_set_size(down_button, 20, 20); // Set the size of the button
+    lv_obj_set_pos(down_button, 110, 280); // Set the position of the button
+    lv_obj_add_event_cb(down_button, event_handler_bottom, LV_EVENT_CLICKED, screen2); // Set the click event handler
 
-                label_y_pos += 45;
+    // Create a label for the down symbol and add it to the button
+    lv_obj_t * down_symbol = lv_label_create(down_button);
+    lv_obj_center(down_symbol);
+    lv_label_set_text(down_symbol, LV_SYMBOL_DOWN);
 
-                book_index++; // Increment the book index
-            }
-        }
+    // Create a style for the down symbol
+    static lv_style_t style_symbol;
+    lv_style_init(&style_symbol);
+    lv_style_set_text_color(&style_symbol, lv_color_black()); // Set the text color to black
+    lv_obj_add_style(down_symbol, &style_symbol, 0); // Apply the style to the down symbol
+
+    // Set the button style to match the background color
+    static lv_style_t style_bottom;
+    lv_style_init(&style_bottom);
+    lv_style_set_bg_color(&style_bottom, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
+    lv_obj_add_style(down_button, &style_bottom, 0);
+
+
+
+    //Botón para desplazar pantalla hacia arriba automáticamente
+    lv_obj_t * up_button = lv_btn_create(screen2);
+    lv_obj_set_size(up_button, 20, 20); // Set the size of the button
+    lv_obj_set_pos(up_button, 110, 330); // Set the position of the button
+    lv_obj_add_event_cb(up_button, event_handler_top, LV_EVENT_CLICKED, screen2); // Set the click event handler
+
+    // Create a label for the up symbol and add it to the button
+    lv_obj_t * up_symbol = lv_label_create(up_button);
+    lv_obj_center(up_symbol);
+    lv_label_set_text(up_symbol, LV_SYMBOL_UP);
+
+    // Create a style for the up symbol
+    static lv_style_t style_symbol_up;
+    lv_style_init(&style_symbol_up);
+    lv_style_set_text_color(&style_symbol_up, lv_color_black()); // Set the text color to black
+    lv_obj_add_style(up_symbol, &style_symbol_up, 0); // Apply the style to the up symbol
+
+    // Set the button style to match the background color
+    static lv_style_t style_top;
+    lv_style_init(&style_top);
+    lv_style_set_bg_color(&style_top, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
+    lv_obj_add_style(up_button, &style_top, 0);
+
+
+
+    lv_obj_t * label = lv_label_create(container);
+    lv_label_set_text(label, "-----------LEYENDA-----------");
+    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
+    lv_obj_set_pos(label, 0, 0);
+
+    // For each book, calculate the percentage of pages read and add a series to the chart
+    for(JsonPair kv : doc.as<JsonObject>()) {
+        String book_key = kv.key().c_str(); // Get the book key
+        book_keys.push_back(book_key.c_str()); // Store the book key for later use
+        JsonObject libro = kv.value().as<JsonObject>();
+
+        // Calculate the percentage of pages read
+        int paginas_total = libro["paginas_total"].as<int>();
+        int pagina_actual = libro["pagina_actual"].as<int>();
+        float porcentaje = ((float)pagina_actual / paginas_total) * 100;
+
+        // Añade el porcentaje ajustado a la serie del gráfico
+        lv_chart_set_next_value(chart, ser, porcentaje);
+
+        // Print the book data to verify they're being processed correctly
+        Serial.println("Book data processed:");
+        Serial.print("Key: ");
+        Serial.println(book_key);
+        Serial.print("Total pages: ");
+        Serial.println(paginas_total);
+        Serial.print("Current page: ");
+        Serial.println(pagina_actual);
+        Serial.print("Percentage: ");
+        Serial.println(porcentaje);
+
+        // Create a label for the book key and add it to the container
+        lv_obj_t * label_key = lv_label_create(container);
+        lv_label_set_text(label_key, book_key.c_str());
+        lv_obj_set_style_text_font(label_key, &ubuntu_bold_16, 0);
+        lv_obj_set_pos(label_key, 0, label_y_pos); // Position the label at the current y position
+
+        // Create a label for the book title and add it to the container
+        lv_obj_t * label_title = lv_label_create(container);
+        lv_label_set_text(label_title, libro["titulo"].as<const char*>());
+        lv_obj_set_style_text_font(label_title, &ubuntu_regular_16, 0);
+        lv_obj_set_pos(label_title, 0, label_y_pos + 20); // Position the label 20px below the key label
+
+        label_y_pos += 45;
+
+        book_index++; // Increment the book index
     }
 
     lv_chart_refresh(chart); // Required after direct set
@@ -944,6 +891,23 @@ void go_to_screen2_tab4(lv_event_t * e) {
     lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
     scr_principal = main_screen;
     create_second_screen_tab4(main_screen);
+}
+
+
+static void event_handler_bottom(lv_event_t * e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
+        lv_obj_scroll_to_y(screen2, lv_obj_get_height(screen2), LV_ANIM_ON); // Scroll to the bottom of the screen
+    }
+}
+
+static void event_handler_top(lv_event_t * e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
+        lv_obj_scroll_to_y(screen2, 0, LV_ANIM_ON); // Scroll to the top of the screen
+    }
 }
 
 

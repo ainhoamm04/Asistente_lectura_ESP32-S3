@@ -76,3 +76,40 @@ void setup_firebase() {
     Firebase.begin(&config, &auth);
     Firebase.reconnectWiFi(true);
 }
+
+
+DynamicJsonDocument get_book_data(const std::string& key) {
+    String path = "/libros";
+    if (!key.empty()) {
+        path += "/" + String(key.c_str());
+    }
+
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            FirebaseJson *json = fbdo.jsonObjectPtr();
+            String jsonString;
+            json->toString(jsonString);
+
+            // Print the JSON string to verify it's loading correctly
+            Serial.println("JSON string loaded from Firebase:");
+            Serial.println(jsonString);
+
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, jsonString);
+
+            size_t requiredSize = measureJson(doc);
+            Serial.print("Tamaño requerido para el JSON: ");
+            Serial.println(requiredSize);
+
+            return doc;
+        }
+    }
+    DynamicJsonDocument doc(1024);
+    return doc;
+}
+
+
+void update_current_page(const std::string& key, int page) {
+    String path = "/libros/" + String(key.c_str()) + "/pagina_actual";
+    Firebase.RTDB.setInt(&fbdo, path.c_str(), page);
+}
