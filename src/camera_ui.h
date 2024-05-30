@@ -9,6 +9,10 @@
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 
+#include "detect_barcode.h"
+
+
+
 extern camera_fb_t *fb;
 
 typedef struct lvgl_camera

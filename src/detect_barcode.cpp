@@ -3,3 +3,4 @@
 //
 
 #include "detect_barcode.h"
+#include <cstdint>

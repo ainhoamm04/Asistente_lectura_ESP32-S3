@@ -6,6 +6,8 @@
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 
+#include "detect_barcode.h"
+
 lv_img_dsc_t photo_show;          //apply an lvgl image variable
 lvgl_camera_ui guider_camera_ui;  //camera ui structure
 camera_fb_t *fb = NULL;           //data structure of camera frame buffer
@@ -56,17 +58,17 @@ void loopTask_camera(void *pvParameters) {
         fb_buf = fb;
         esp_camera_fb_return(fb);
         if (fb_buf != NULL) {
+            /*
             for (int i = 0; i < fb_buf->len; i++) {
                 fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
-            }
+            }*/
 
-            /*
             for (int i = 0; i < fb_buf->len; i += 2) {
                 uint8_t temp = 0;
                 temp = fb_buf->buf[i];
                 fb_buf->buf[i] = fb_buf->buf[i + 1];
                 fb_buf->buf[i + 1] = temp;
-            }*/
+            }
             photo_show.data = fb_buf->buf;
             lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
             //cargar aqui programa leer codigo de barras
@@ -81,12 +83,13 @@ void ui_set_photo_show(void) {
     header.always_zero = 0;
     header.w = 240;
     header.h = 240;
-    //header.cf = LV_IMG_CF_TRUE_COLOR;
-    header.cf = LV_IMG_CF_ALPHA_8BIT;
+    header.cf = LV_IMG_CF_TRUE_COLOR;
+    //header.cf = LV_IMG_CF_ALPHA_8BIT;
     photo_show.header = header;
     photo_show.data_size = 240 * 240 * 2;
     photo_show.data = NULL;
 }
+
 
 
 // Modificación de la función camera_imgbtn_photo_event_handler
@@ -95,14 +98,92 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
     if (code == LV_EVENT_CLICKED) {
         Serial.println("Clicked the camera button.");
         if (camera_task_flag == 1) {
-            stop_camera_task();
-            set_book_number();
-            searchIsbnInDatabase();
-            go_to_screen2(e);
+            //stop_camera_task();
+            //set_book_number();
+            //searchIsbnInDatabase();
+            //go_to_screen2(e);
             create_camera_task();
+
+
         }
     }
 }
+
+
+
+//Click the logo icon, callback function: goes to the main ui interface
+static void camera_imgbtn_home_event_handler(lv_event_t *e) {
+    lv_event_code_t code = lv_event_get_code(e);
+
+    if (code == LV_EVENT_CLICKED) {
+        stop_camera_task();
+        Serial.println("Clicked the home button.");
+        back_to_main_menu(e); // Llamada a la función
+    }
+}
+
+
+
+//Parameter configuration function on the camera screen
+void setup_scr_camera(lvgl_camera_ui *ui) {
+    //Write codes camera
+    ui->camera = lv_obj_create(NULL);
+    setup_list_head_picture();  //Generate a linked list based on the SD card's picture folder
+    lv_img_home_init();
+    lv_img_camera_init();
+
+    static lv_style_t bg_style;
+    lv_style_init(&bg_style);
+    lv_style_set_bg_color(&bg_style, lv_color_hex(0xffffff));
+    lv_obj_add_style(ui->camera, &bg_style, LV_PART_MAIN);
+
+    /*Init the pressed style*/
+    static lv_style_t style_pr;              //Apply for a style
+    lv_style_init(&style_pr);                //Initialize it
+    lv_style_set_translate_y(&style_pr, 5);  //Style: Every time you trigger, move down 5 pixels
+
+    //Write codes camera_video
+    ui->camera_video = lv_img_create(ui->camera);
+    lv_obj_set_pos(ui->camera_video, 0, 0);
+    lv_obj_set_size(ui->camera_video, 240, 240);
+
+    //Write codes camera_photo
+    ui->camera_imgbtn_photo = lv_imgbtn_create(ui->camera);
+    lv_obj_set_pos(ui->camera_imgbtn_photo, 20, 240);
+    lv_obj_set_size(ui->camera_imgbtn_photo, 80, 80);
+    lv_img_set_src(ui->camera_imgbtn_photo, &img_camera);
+    lv_obj_add_style(ui->camera_imgbtn_photo, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
+
+    //Write codes camera_return
+    ui->camera_imgbtn_home = lv_imgbtn_create(ui->camera);
+    lv_obj_set_pos(ui->camera_imgbtn_home, 140, 240);
+    lv_obj_set_size(ui->camera_imgbtn_home, 80, 80);
+    lv_img_set_src(ui->camera_imgbtn_home, &img_home);
+    lv_obj_add_style(ui->camera_imgbtn_home, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
+
+    lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
+    //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
+    create_camera_task();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 typedef enum {
     BUTTON_STYLE_ORANGE
@@ -232,8 +313,6 @@ void set_book_number() {
 String get_book_number() {
     return isbn_aux;
 }
-
-
 
 
 void searchIsbnInDatabase() {
@@ -370,62 +449,5 @@ static void keyboard_event_cb(lv_event_t * e) {
 
         create_orange_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
     }
-}
-
-
-//Click the logo icon, callback function: goes to the main ui interface
-static void camera_imgbtn_home_event_handler(lv_event_t *e) {
-    lv_event_code_t code = lv_event_get_code(e);
-
-    if (code == LV_EVENT_CLICKED) {
-        stop_camera_task();
-        Serial.println("Clicked the home button.");
-        back_to_main_menu(e); // Llamada a la función
-    }
-}
-
-
-
-//Parameter configuration function on the camera screen
-void setup_scr_camera(lvgl_camera_ui *ui) {
-    //Write codes camera
-    ui->camera = lv_obj_create(NULL);
-    setup_list_head_picture();  //Generate a linked list based on the SD card's picture folder
-    lv_img_home_init();
-    lv_img_camera_init();
-
-    static lv_style_t bg_style;
-    lv_style_init(&bg_style);
-    lv_style_set_bg_color(&bg_style, lv_color_hex(0xffffff));
-    lv_obj_add_style(ui->camera, &bg_style, LV_PART_MAIN);
-
-    /*Init the pressed style*/
-    static lv_style_t style_pr;              //Apply for a style
-    lv_style_init(&style_pr);                //Initialize it
-    lv_style_set_translate_y(&style_pr, 5);  //Style: Every time you trigger, move down 5 pixels
-
-    //Write codes camera_video
-    ui->camera_video = lv_img_create(ui->camera);
-    lv_obj_set_pos(ui->camera_video, 0, 0);
-    lv_obj_set_size(ui->camera_video, 240, 240);
-
-    //Write codes camera_photo
-    ui->camera_imgbtn_photo = lv_imgbtn_create(ui->camera);
-    lv_obj_set_pos(ui->camera_imgbtn_photo, 20, 240);
-    lv_obj_set_size(ui->camera_imgbtn_photo, 80, 80);
-    lv_img_set_src(ui->camera_imgbtn_photo, &img_camera);
-    lv_obj_add_style(ui->camera_imgbtn_photo, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
-
-    //Write codes camera_return
-    ui->camera_imgbtn_home = lv_imgbtn_create(ui->camera);
-    lv_obj_set_pos(ui->camera_imgbtn_home, 140, 240);
-    lv_obj_set_size(ui->camera_imgbtn_home, 80, 80);
-    lv_img_set_src(ui->camera_imgbtn_home, &img_home);
-    lv_obj_add_style(ui->camera_imgbtn_home, &style_pr, LV_STATE_PRESSED);  //Triggered when the button is pressed
-
-    lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
-    //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
-    create_camera_task();
 }
 
