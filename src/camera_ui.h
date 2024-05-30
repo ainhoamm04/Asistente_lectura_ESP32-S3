@@ -9,9 +9,9 @@
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 
-#include "detect_barcode.h"
-
-
+void grayscale(void);
+void loopTask_grayscale(void *pvParameters);
+void ui_set_photo_show_grayscale(void);
 
 extern camera_fb_t *fb;
 
