@@ -51,7 +51,8 @@ int camera_init(void) {
     config.xclk_freq_hz = 10000000;
     config.frame_size = FRAMESIZE_240X240;
     //config.pixel_format = PIXFORMAT_JPEG; // for streaming
-    config.pixel_format = PIXFORMAT_RGB565;
+    //config.pixel_format = PIXFORMAT_RGB565;
+    config.pixel_format = PIXFORMAT_GRAYSCALE;
     config.grab_mode = CAMERA_GRAB_LATEST;
     config.fb_location = CAMERA_FB_IN_PSRAM;
     config.jpeg_quality = 10;

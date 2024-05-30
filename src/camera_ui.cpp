@@ -56,12 +56,17 @@ void loopTask_camera(void *pvParameters) {
         fb_buf = fb;
         esp_camera_fb_return(fb);
         if (fb_buf != NULL) {
+            for (int i = 0; i < fb_buf->len; i++) {
+                fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
+            }
+
+            /*
             for (int i = 0; i < fb_buf->len; i += 2) {
                 uint8_t temp = 0;
                 temp = fb_buf->buf[i];
                 fb_buf->buf[i] = fb_buf->buf[i + 1];
                 fb_buf->buf[i + 1] = temp;
-            }
+            }*/
             photo_show.data = fb_buf->buf;
             lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
             //cargar aqui programa leer codigo de barras
@@ -76,7 +81,8 @@ void ui_set_photo_show(void) {
     header.always_zero = 0;
     header.w = 240;
     header.h = 240;
-    header.cf = LV_IMG_CF_TRUE_COLOR;
+    //header.cf = LV_IMG_CF_TRUE_COLOR;
+    header.cf = LV_IMG_CF_ALPHA_8BIT;
     photo_show.header = header;
     photo_show.data_size = 240 * 240 * 2;
     photo_show.data = NULL;
