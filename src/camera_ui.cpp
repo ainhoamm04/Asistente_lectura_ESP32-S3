@@ -49,6 +49,78 @@ void stop_camera_task(void) {
     }
 }
 
+
+
+
+
+
+
+
+double* calculateIntegralImage(uint8_t* image, int width, int height) {
+    double* integralImage = new double[width * height];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            integralImage[i * width + j] = image[i * width + j] +
+                (i > 0 ? integralImage[(i - 1) * width + j] : 0) +
+                (j > 0 ? integralImage[i * width + j - 1] : 0) -
+                (i > 0 && j > 0 ? integralImage[(i - 1) * width + j - 1] : 0);
+        }
+    }
+    return integralImage;
+}
+
+double calculateMean(double* integralImage, int width, int startX, int startY, int endX, int endY) {
+    double sum = integralImage[endX * width + endY];
+    if (startX > 0) sum -= integralImage[(startX - 1) * width + endY];
+    if (startY > 0) sum -= integralImage[endX * width + startY - 1];
+    if (startX > 0 && startY > 0) sum += integralImage[(startX - 1) * width + startY - 1];
+    int count = (endX - startX + 1) * (endY - startY + 1);
+    return sum / count;
+}
+
+void applyAdaptiveThreshold(uint8_t* image, int width, int height, int blockSize, int C) {
+    double* integralImage = calculateIntegralImage(image, width, height);
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            int startX = std::max(0, i - blockSize / 2);
+            int startY = std::max(0, j - blockSize / 2);
+            int endX = std::min(height - 1, i + blockSize / 2);
+            int endY = std::min(width - 1, j + blockSize / 2);
+            double mean = calculateMean(integralImage, width, startX, startY, endX, endY);
+            image[i * width + j] = (image[i * width + j] > mean - C) ? 255 : 0;
+        }
+    }
+    delete[] integralImage;
+}
+
+void applyMeanFilter(uint8_t* image, int width, int height, int filterSize) {
+    double* integralImage = calculateIntegralImage(image, width, height);
+    uint8_t* temp = new uint8_t[width * height];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            int startX = std::max(0, i - filterSize / 2);
+            int startY = std::max(0, j - filterSize / 2);
+            int endX = std::min(height - 1, i + filterSize / 2);
+            int endY = std::min(width - 1, j + filterSize / 2);
+            double mean = calculateMean(integralImage, width, startX, startY, endX, endY);
+            temp[i * width + j] = static_cast<uint8_t>(mean);
+        }
+    }
+    memcpy(image, temp, width * height);
+    delete[] temp;
+    delete[] integralImage;
+}
+
+
+
+
+
+
+
+
+
+
+
 //camera thread
 void loopTask_camera(void *pvParameters) {
     Serial.println("loopTask_camera start...");
@@ -72,24 +144,19 @@ void loopTask_camera(void *pvParameters) {
                 fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
             }*/
 
-            uint8_t threshold = 128; // Define el umbral. Puedes ajustar este valor según tus necesidades.
+            // Copiar los datos de la imagen en el buffer
+            uint8_t* new_buf = new uint8_t[fb_buf->len];
+            memcpy(new_buf, fb_buf->buf, fb_buf->len);
 
-            for (int i = 0; i < fb_buf->len; i++) {
-                // Aplica el umbral para convertir la imagen en escala de grises a una imagen binaria
-                if (fb_buf->buf[i] < threshold) {
-                    fb_buf->buf[i] = 255; // Blanco
-                } else {
-                    fb_buf->buf[i] = 0; // Negro
-                }
+            // Aplicar el filtro de la media directamente sobre new_buf
+            applyMeanFilter(new_buf, fb_buf->width, fb_buf->height, 5);
 
-                // Invierte los colores de la imagen binaria
-                fb_buf->buf[i] = 255 - fb_buf->buf[i];
-            }
+            // Aplicar la umbralización adaptativa directamente sobre new_buf
+            applyAdaptiveThreshold(new_buf, fb_buf->width, fb_buf->height, 10, 5);
 
-            photo_show.data = fb_buf->buf; //guardar el frame en la variable photo_show
+            photo_show.data = new_buf; //guardar el frame en la variable de imagen
             lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
 
-            //cargar aqui programa leer codigo de barras
         }
     }
     vTaskDelete(cameraTaskHandle);
@@ -104,7 +171,8 @@ void ui_set_photo_show(void) {
     //header.cf = LV_IMG_CF_TRUE_COLOR;
     header.cf = LV_IMG_CF_ALPHA_8BIT;
     photo_show.header = header;
-    photo_show.data_size = 240 * 240 * 2;
+    //photo_show.data_size = 240 * 240 * 2; //2 bytes en RGB
+    photo_show.data_size = 240 * 240 * 1; //1 byte en grayscale
     photo_show.data = NULL;
 }
 
@@ -122,7 +190,6 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
             //go_to_screen2(e);
             //create_camera_task();
 
-            //cargar aqui programa leer codigo de barras
         }
     }
 }
