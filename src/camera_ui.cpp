@@ -112,7 +112,39 @@ void applyMeanFilter(uint8_t* image, int width, int height, int filterSize) {
 }
 
 
+void applyErosion(uint8_t* image, int width, int height, int erosionSize) {
+    uint8_t* temp = new uint8_t[width * height];
+    for (int i = erosionSize; i < height - erosionSize; i++) {
+        for (int j = erosionSize; j < width - erosionSize; j++) {
+            uint8_t minPixel = 255;
+            for (int x = -erosionSize; x <= erosionSize; x++) {
+                for (int y = -erosionSize; y <= erosionSize; y++) {
+                    minPixel = std::min(minPixel, image[(i + x) * width + (j + y)]);
+                }
+            }
+            temp[i * width + j] = minPixel;
+        }
+    }
+    memcpy(image, temp, width * height);
+    delete[] temp;
+}
 
+void applyDilation(uint8_t* image, int width, int height, int dilationSize) {
+    uint8_t* temp = new uint8_t[width * height];
+    for (int i = dilationSize; i < height - dilationSize; i++) {
+        for (int j = dilationSize; j < width - dilationSize; j++) {
+            uint8_t maxPixel = 0;
+            for (int x = -dilationSize; x <= dilationSize; x++) {
+                for (int y = -dilationSize; y <= dilationSize; y++) {
+                    maxPixel = std::max(maxPixel, image[(i + x) * width + (j + y)]);
+                }
+            }
+            temp[i * width + j] = maxPixel;
+        }
+    }
+    memcpy(image, temp, width * height);
+    delete[] temp;
+}
 
 
 
@@ -153,6 +185,10 @@ void loopTask_camera(void *pvParameters) {
 
             // Aplicar la umbralización adaptativa directamente sobre new_buf
             applyAdaptiveThreshold(new_buf, fb_buf->width, fb_buf->height, 10, 5);
+
+            // Aplicar la erosión y la dilatación
+            applyErosion(new_buf, fb_buf->width, fb_buf->height, 1);
+            applyDilation(new_buf, fb_buf->width, fb_buf->height, 1);
 
             photo_show.data = new_buf; //guardar el frame en la variable de imagen
             lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
