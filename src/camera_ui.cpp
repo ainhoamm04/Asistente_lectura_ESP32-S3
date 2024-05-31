@@ -57,17 +57,17 @@ void loopTask_camera(void *pvParameters) {
         fb_buf = fb;
         esp_camera_fb_return(fb);
         if (fb_buf != NULL) {
-            /*
+
             for (int i = 0; i < fb_buf->len; i++) {
                 fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
-            }*/
-
+            }
+            /*
             for (int i = 0; i < fb_buf->len; i += 2) {
                 uint8_t temp = 0;
                 temp = fb_buf->buf[i];
                 fb_buf->buf[i] = fb_buf->buf[i + 1];
                 fb_buf->buf[i + 1] = temp;
-            }
+            }*/
 
             photo_show.data = fb_buf->buf;
             lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
@@ -84,8 +84,8 @@ void ui_set_photo_show(void) {
     header.always_zero = 0;
     header.w = 240;
     header.h = 240;
-    header.cf = LV_IMG_CF_TRUE_COLOR;
-    //header.cf = LV_IMG_CF_ALPHA_8BIT;
+    //header.cf = LV_IMG_CF_TRUE_COLOR;
+    header.cf = LV_IMG_CF_ALPHA_8BIT;
     photo_show.header = header;
     photo_show.data_size = 240 * 240 * 2;
     photo_show.data = NULL;
@@ -104,13 +104,6 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
             //searchIsbnInDatabase();
             //go_to_screen2(e);
             //create_camera_task();
-
-            //-------------------------------------------
-            stop_camera_task();
-
-            setup_scr_camera(&guider_camera_ui);
-            // Carga la interfaz de usuario de la cámara en la pantalla
-            lv_scr_load(guider_camera_ui.camera);
 
             //cargar aqui programa leer codigo de barras
         }
@@ -172,71 +165,8 @@ void setup_scr_camera(lvgl_camera_ui *ui) {
     lv_obj_add_event_cb(ui->camera_imgbtn_photo, camera_imgbtn_photo_event_handler, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui->camera_imgbtn_home, camera_imgbtn_home_event_handler, LV_EVENT_ALL, NULL);
     //lv_obj_add_event_cb(ui->camera, camera_screen_gesture_event_handler, LV_EVENT_ALL, NULL);
-    //create_camera_task();
-    grayscale();
+    create_camera_task();
 }
-
-
-
-
-
-
-
-
-
-void grayscale(void) {
-    if (camera_task_flag == 0) {
-        camera_task_flag = 1;
-        ui_set_photo_show_grayscale();
-        xTaskCreate(loopTask_grayscale, "loopTask_camera", 8192, NULL, 1, &cameraTaskHandle);
-    } else {
-        Serial.println("loopTask_camera is running...");
-    }
-}
-
-void ui_set_photo_show_grayscale(void) {
-    lv_img_header_t header;
-    header.always_zero = 0;
-    header.w = 240;
-    header.h = 240;
-    header.cf = LV_IMG_CF_ALPHA_8BIT;
-    photo_show.header = header;
-    photo_show.data_size = 240 * 240 * 2;
-    photo_show.data = NULL;
-}
-
-void loopTask_grayscale(void *pvParameters) {
-    Serial.println("loopTask_camera_grayscale start...");
-    while (camera_task_flag) {
-        fb = esp_camera_fb_get();
-        fb_buf = fb;
-        esp_camera_fb_return(fb);
-        if (fb_buf != NULL) {
-
-            for (int i = 0; i < fb_buf->len; i++) {
-                fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
-            }
-
-            for (int i = 0; i < fb_buf->len; i += 2) {
-                uint8_t temp = 0;
-                temp = fb_buf->buf[i];
-                fb_buf->buf[i] = fb_buf->buf[i + 1];
-                fb_buf->buf[i + 1] = temp;
-            }
-
-            photo_show.data = fb_buf->buf;
-            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
-
-            //cargar aqui programa leer codigo de barras
-        }
-    }
-    vTaskDelete(cameraTaskHandle);
-}
-
-
-
-
-
 
 
 
