@@ -53,15 +53,12 @@ void stop_camera_task(void) {
 void loopTask_camera(void *pvParameters) {
     Serial.println("loopTask_camera start...");
     while (camera_task_flag) {
-        fb = esp_camera_fb_get();
-        fb_buf = fb;
-        esp_camera_fb_return(fb);
+        fb = esp_camera_fb_get(); //obtener un frame de la cámara
+        fb_buf = fb; //guardar el frame en un buffer
+        esp_camera_fb_return(fb); //devolver el frame a la cámara para que pueda ser utilizado
         if (fb_buf != NULL) {
-
-            for (int i = 0; i < fb_buf->len; i++) {
-                fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
-            }
             /*
+            //Para cambiar los colores de RGB a BGR
             for (int i = 0; i < fb_buf->len; i += 2) {
                 uint8_t temp = 0;
                 temp = fb_buf->buf[i];
@@ -69,8 +66,28 @@ void loopTask_camera(void *pvParameters) {
                 fb_buf->buf[i + 1] = temp;
             }*/
 
-            photo_show.data = fb_buf->buf;
-            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
+            /*
+            //Para invertir los colores de la imagen. Los px oscuros se convierten en claros y viceversa
+            for (int i = 0; i < fb_buf->len; i++) {
+                fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
+            }*/
+
+            uint8_t threshold = 128; // Define el umbral. Puedes ajustar este valor según tus necesidades.
+
+            for (int i = 0; i < fb_buf->len; i++) {
+                // Aplica el umbral para convertir la imagen en escala de grises a una imagen binaria
+                if (fb_buf->buf[i] < threshold) {
+                    fb_buf->buf[i] = 255; // Blanco
+                } else {
+                    fb_buf->buf[i] = 0; // Negro
+                }
+
+                // Invierte los colores de la imagen binaria
+                fb_buf->buf[i] = 255 - fb_buf->buf[i];
+            }
+
+            photo_show.data = fb_buf->buf; //guardar el frame en la variable photo_show
+            lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
 
             //cargar aqui programa leer codigo de barras
         }
