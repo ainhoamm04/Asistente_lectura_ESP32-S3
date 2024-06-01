@@ -5,7 +5,9 @@
 #include "firebase_config.h"
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
+#include "Freenove_WS2812_Lib_for_ESP32.h"
 
+extern Freenove_ESP32_WS2812 strip;
 
 lv_img_dsc_t photo_show;          //apply an lvgl image variable
 lvgl_camera_ui guider_camera_ui;  //camera ui structure
@@ -55,96 +57,180 @@ void stop_camera_task(void) {
 
 
 
+void applyGaussianFilter(uint8_t* image, int width, int height) {
+    // Define the Gaussian kernel
+    double kernel[3][3] = {
+        {1.0 / 16, 2.0 / 16, 1.0 / 16},
+        {2.0 / 16, 4.0 / 16, 2.0 / 16},
+        {1.0 / 16, 2.0 / 16, 1.0 / 16}
+    };
 
-double* calculateIntegralImage(uint8_t* image, int width, int height) {
-    double* integralImage = new double[width * height];
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            integralImage[i * width + j] = image[i * width + j] +
-                (i > 0 ? integralImage[(i - 1) * width + j] : 0) +
-                (j > 0 ? integralImage[i * width + j - 1] : 0) -
-                (i > 0 && j > 0 ? integralImage[(i - 1) * width + j - 1] : 0);
-        }
-    }
-    return integralImage;
-}
-
-double calculateMean(double* integralImage, int width, int startX, int startY, int endX, int endY) {
-    double sum = integralImage[endX * width + endY];
-    if (startX > 0) sum -= integralImage[(startX - 1) * width + endY];
-    if (startY > 0) sum -= integralImage[endX * width + startY - 1];
-    if (startX > 0 && startY > 0) sum += integralImage[(startX - 1) * width + startY - 1];
-    int count = (endX - startX + 1) * (endY - startY + 1);
-    return sum / count;
-}
-
-void applyAdaptiveThreshold(uint8_t* image, int width, int height, int blockSize, int C) {
-    double* integralImage = calculateIntegralImage(image, width, height);
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            int startX = std::max(0, i - blockSize / 2);
-            int startY = std::max(0, j - blockSize / 2);
-            int endX = std::min(height - 1, i + blockSize / 2);
-            int endY = std::min(width - 1, j + blockSize / 2);
-            double mean = calculateMean(integralImage, width, startX, startY, endX, endY);
-            image[i * width + j] = (image[i * width + j] > mean - C) ? 255 : 0;
-        }
-    }
-    delete[] integralImage;
-}
-
-void applyMeanFilter(uint8_t* image, int width, int height, int filterSize) {
-    double* integralImage = calculateIntegralImage(image, width, height);
     uint8_t* temp = new uint8_t[width * height];
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            int startX = std::max(0, i - filterSize / 2);
-            int startY = std::max(0, j - filterSize / 2);
-            int endX = std::min(height - 1, i + filterSize / 2);
-            int endY = std::min(width - 1, j + filterSize / 2);
-            double mean = calculateMean(integralImage, width, startX, startY, endX, endY);
-            temp[i * width + j] = static_cast<uint8_t>(mean);
-        }
-    }
-    memcpy(image, temp, width * height);
-    delete[] temp;
-    delete[] integralImage;
-}
-
-
-void applyErosion(uint8_t* image, int width, int height, int erosionSize) {
-    uint8_t* temp = new uint8_t[width * height];
-    for (int i = erosionSize; i < height - erosionSize; i++) {
-        for (int j = erosionSize; j < width - erosionSize; j++) {
-            uint8_t minPixel = 255;
-            for (int x = -erosionSize; x <= erosionSize; x++) {
-                for (int y = -erosionSize; y <= erosionSize; y++) {
-                    minPixel = std::min(minPixel, image[(i + x) * width + (j + y)]);
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            double sum = 0;
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    sum += kernel[x + 1][y + 1] * image[(i + x) * width + (j + y)];
                 }
             }
-            temp[i * width + j] = minPixel;
+            temp[i * width + j] = static_cast<uint8_t>(sum);
         }
     }
     memcpy(image, temp, width * height);
     delete[] temp;
 }
 
-void applyDilation(uint8_t* image, int width, int height, int dilationSize) {
-    uint8_t* temp = new uint8_t[width * height];
-    for (int i = dilationSize; i < height - dilationSize; i++) {
-        for (int j = dilationSize; j < width - dilationSize; j++) {
-            uint8_t maxPixel = 0;
-            for (int x = -dilationSize; x <= dilationSize; x++) {
-                for (int y = -dilationSize; y <= dilationSize; y++) {
-                    maxPixel = std::max(maxPixel, image[(i + x) * width + (j + y)]);
+void calculateGradient(uint8_t* image, int width, int height, double*& gradientX, double*& gradientY, double*& magnitude) {
+    // Define the Sobel kernels
+    int sobelX[3][3] = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
+    int sobelY[3][3] = {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
+
+    gradientX = new double[width * height];
+    gradientY = new double[width * height];
+    magnitude = new double[width * height];
+
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            double gx = 0;
+            double gy = 0;
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    gx += sobelX[x + 1][y + 1] * image[(i + x) * width + (j + y)];
+                    gy += sobelY[x + 1][y + 1] * image[(i + x) * width + (j + y)];
                 }
             }
-            temp[i * width + j] = maxPixel;
+            gradientX[i * width + j] = gx;
+            gradientY[i * width + j] = gy;
+            magnitude[i * width + j] = sqrt(gx * gx + gy * gy);
         }
     }
-    memcpy(image, temp, width * height);
+}
+
+double calculateOtsuThreshold(uint8_t* image, int width, int height) {
+    int histogram[256] = {0};
+
+    // Calculate the histogram
+    for (int i = 0; i < width * height; i++) {
+        histogram[image[i]]++;
+    }
+
+    int total = width * height;
+    float sum = 0;
+    for (int i = 0; i < 256; i++) {
+        sum += i * histogram[i];
+    }
+
+    float sumB = 0;
+    int wB = 0;
+    int wF = 0;
+    float varMax = 0;
+    int threshold = 0;
+
+    for (int i = 0; i < 256; i++) {
+        wB += histogram[i];
+        if (wB == 0) {
+            continue;
+        }
+
+        wF = total - wB;
+        if (wF == 0) {
+            break;
+        }
+
+        sumB += i * histogram[i];
+        float mB = sumB / wB;
+        float mF = (sum - sumB) / wF;
+
+        float varBetween = wB * wF * (mB - mF) * (mB - mF);
+
+        if (varBetween > varMax) {
+            varMax = varBetween;
+            threshold = i;
+        }
+    }
+
+    return threshold;
+}
+
+
+void convertTo8Bit(double* image, uint8_t* output, int width, int height) {
+    double minVal = *std::min_element(image, image + width * height);
+    double maxVal = *std::max_element(image, image + width * height);
+
+    for (int i = 0; i < width * height; i++) {
+        output[i] = static_cast<uint8_t>((image[i] - minVal) / (maxVal - minVal) * 255);
+    }
+}
+
+void thresholdImage(double* image, uint8_t* binaryImage, int width, int height) {
+    // Convertir la imagen a 8 bits
+    uint8_t* image8bit = new uint8_t[width * height];
+    convertTo8Bit(image, image8bit, width, height);
+
+    // Calcular el umbral utilizando el método de Otsu
+    double threshold = calculateOtsuThreshold(image8bit, width, height);
+
+    // Umbralizar la imagen
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            binaryImage[i * width + j] = (image[i * width + j] > threshold) ? 255 : 0;
+        }
+    }
+
+    delete[] image8bit;
+}
+
+
+void dilate(uint8_t* image, uint8_t* output, int width, int height) {
+    int structElem[3][3] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            uint8_t maxVal = 0;
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    if (structElem[x + 1][y + 1]) {
+                        uint8_t val = image[(i + x) * width + (j + y)];
+                        if (val > maxVal) {
+                            maxVal = val;
+                        }
+                    }
+                }
+            }
+            output[i * width + j] = maxVal;
+        }
+    }
+}
+
+void erode(uint8_t* image, uint8_t* output, int width, int height) {
+    int structElem[3][3] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            uint8_t minVal = 255;
+            for (int x = -1; x <= 1; x++) {
+                for (int y = -1; y <= 1; y++) {
+                    if (structElem[x + 1][y + 1]) {
+                        uint8_t val = image[(i + x) * width + (j + y)];
+                        if (val < minVal) {
+                            minVal = val;
+                        }
+                    }
+                }
+            }
+            output[i * width + j] = minVal;
+        }
+    }
+}
+
+void close(uint8_t* image, uint8_t* output, int width, int height) {
+    uint8_t* temp = new uint8_t[width * height];
+    dilate(image, temp, width, height);
+    erode(temp, output, width, height);
     delete[] temp;
 }
+
 
 
 
@@ -176,25 +262,46 @@ void loopTask_camera(void *pvParameters) {
                 fb_buf->buf[i] = 255 - fb_buf->buf[i]; // Invertir colores
             }*/
 
+            strip.setLedColorData(0, 255, 255, 255); // Set the color of the first LED to white
+            strip.show(); // Actualiza los LEDs
+
             // Copiar los datos de la imagen en el buffer
-            uint8_t* new_buf = new uint8_t[fb_buf->len];
-            memcpy(new_buf, fb_buf->buf, fb_buf->len);
+            //uint8_t* new_buf = new uint8_t[fb_buf->len];
+            //memcpy(new_buf, fb_buf->buf, fb_buf->len);
 
-            // Aplicar el filtro de la media directamente sobre new_buf
-            applyMeanFilter(new_buf, fb_buf->width, fb_buf->height, 5);
+            // Aplicar el filtro gaussiano
+            applyGaussianFilter(fb_buf->buf, fb_buf->width, fb_buf->height);
 
-            // Aplicar la umbralización adaptativa directamente sobre new_buf
-            applyAdaptiveThreshold(new_buf, fb_buf->width, fb_buf->height, 10, 5);
+            // Calcular el gradiente
+            double* gradientX;
+            double* gradientY;
+            double* magnitude;
+            calculateGradient(fb_buf->buf, fb_buf->width, fb_buf->height, gradientX, gradientY, magnitude);
 
-            // Aplicar la erosión y la dilatación
-            applyErosion(new_buf, fb_buf->width, fb_buf->height, 1);
-            applyDilation(new_buf, fb_buf->width, fb_buf->height, 1);
+            // Umbralizar la imagen
+            uint8_t* binaryImage = new uint8_t[fb_buf->width * fb_buf->height];
+            thresholdImage(magnitude, binaryImage, fb_buf->width, fb_buf->height);
 
-            photo_show.data = new_buf; //guardar el frame en la variable de imagen
-            lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
+            // Aplicar la operación de cierre
+            uint8_t* outputImage = new uint8_t[fb_buf->width * fb_buf->height];
+            close(binaryImage, outputImage, fb_buf->width, fb_buf->height);
+
+            // Liberar la memoria
+            delete[] gradientX;
+            delete[] gradientY;
+            delete[] magnitude;
+            delete[] binaryImage;
+
+            // Actualizar la imagen mostrada
+            photo_show.data = outputImage;
+            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
+
+            //photo_show.data = new_buf; //guardar el frame en la variable de imagen
+            //lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
 
         }
     }
+
     vTaskDelete(cameraTaskHandle);
 }
 
@@ -238,6 +345,10 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
 
     if (code == LV_EVENT_CLICKED) {
         stop_camera_task();
+
+        strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
+        strip.show(); // Actualiza los LEDs
+
         Serial.println("Clicked the home button.");
         back_to_main_menu(e); // Llamada a la función
     }

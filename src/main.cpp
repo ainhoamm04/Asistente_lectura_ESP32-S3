@@ -7,16 +7,18 @@
 #include "sd_card.h"
 #include "camera.h"
 #include "camera_ui.h"
-#include "firebase_config.h"
+#include "Freenove_WS2812_Lib_for_ESP32.h"
 
+#include "firebase_config.h"
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 #include <FirebaseJson.h>
 
 
-
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 Display screen;
+
+Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
 lv_obj_t *scr_principal;
 
@@ -76,6 +78,8 @@ void setup() {
     sdcard_init();
     camera_init();
     screen.init();
+    strip.begin();
+    strip.setBrightness(255);
 
     tab_function();
 
