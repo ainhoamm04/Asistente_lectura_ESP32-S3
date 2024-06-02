@@ -5,6 +5,7 @@
 #include "firebase_config.h"
 #include <WiFi.h>
 #include <ArduinoJson.h>
+#include <lvgl.h>
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
@@ -77,6 +78,35 @@ void setup_firebase() {
     Firebase.reconnectWiFi(true);
 }
 
+/*
+std::vector<JsonObject> get_book_data() {
+    std::vector<JsonObject> books;
+
+    String path = "/libros";
+    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
+        if (fbdo.dataType() == "json") {
+            FirebaseJson *json = fbdo.jsonObjectPtr();
+            String jsonString;
+            json->toString(jsonString);
+
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, jsonString);
+
+            for (JsonPair kv : doc.as<JsonObject>()) {
+                books.push_back(kv.value().as<JsonObject>());
+            }
+        }
+    }
+
+    // Ordenar los libros por la marca de tiempo
+    std::sort(books.begin(), books.end(), [](const JsonObject& a, const JsonObject& b) {
+        return a["ultima_modificacion"].as<long>() > b["ultima_modificacion"].as<long>();
+    });
+
+    return books;
+}*/
+
+
 
 DynamicJsonDocument get_book_data(const std::string& key) {
     String path = "/libros";
@@ -110,6 +140,11 @@ DynamicJsonDocument get_book_data(const std::string& key) {
 
 
 void update_current_page(const std::string& key, int page) {
+    // Actualizar la página actual
     String path = "/libros/" + String(key.c_str()) + "/pagina_actual";
     Firebase.RTDB.setInt(&fbdo, path.c_str(), page);
+
+    // Actualizar la última modificación
+    path = "/libros/" + String(key.c_str()) + "/ultima_modificacion";
+    Firebase.RTDB.setTimestamp(&fbdo, path.c_str());
 }

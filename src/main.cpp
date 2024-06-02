@@ -48,7 +48,7 @@ static void tab1_content(lv_obj_t * parent);
 void create_second_screen_tab1(lv_obj_t *padre);
 void go_to_screen2_tab1(lv_event_t * e);
 
-void tab2_content(lv_obj_t * parent);
+extern void tab2_content(lv_obj_t * parent);
 void create_second_screen_tab2(lv_obj_t * parent, const std::string& key);
 void go_to_screen2_tab2(lv_event_t * e);
 
@@ -61,6 +61,9 @@ void initialize_and_load_camera();
 static void tab4_content(lv_obj_t * parent);
 void create_second_screen_tab4(lv_obj_t *padre);
 void go_to_screen2_tab4(lv_event_t * e);
+static void event_handler_scroll1(lv_event_t * e);
+static void event_handler_scroll2(lv_event_t * e);
+static void event_handler_scroll3(lv_event_t * e);
 static void event_handler_bottom(lv_event_t * e);
 static void event_handler_top(lv_event_t * e);
 static void draw_label_x_axis(lv_event_t * e);
@@ -70,20 +73,20 @@ static void draw_label_y_axis(lv_event_t * e);
 void setup() {
     Serial.begin(115200);
 
-    // Configuración y conexión de Firebase
-    setup_firebase();
-
-    //NVS.begin();
-
     sdcard_init();
     camera_init();
+
     screen.init();
-    strip.begin();
-    strip.setBrightness(255);
+
+    setup_firebase();
 
     tab_function();
 
-    //searchIsbnInDatabase();
+    //NVS.begin();
+
+    strip.begin();
+    strip.setBrightness(255);
+
 }
 
 
@@ -92,7 +95,6 @@ void setup() {
 void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
-
     Firebase.ready();
 }
 
@@ -317,11 +319,13 @@ static void tab1_content(lv_obj_t * parent)
 
     create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 180);
 
-    lv_obj_t * label = lv_label_create(parent);
-    lv_label_set_text(label, "Yo seré tu asistente\n" "\t\t\t\t de lectura :)" "\n\n¿Quieres saber cómo \n\t\t\t\t\t\tfunciono?\n");
-    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
-    lv_obj_set_style_text_color(label, lv_color_hex(0x000000), LV_PART_MAIN);
-    lv_obj_set_pos(label, 28, 60);
+    lv_obj_t * label1 = lv_label_create(parent);
+    lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(label1, "Yo seré tu asistente de lectura :)\n\n¿Quieres saber cómo funciono?");
+    lv_obj_set_style_text_font(label1, &ubuntu_regular_16, 0);
+    lv_obj_set_width(label1, 160);
+    lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -20);
 }
 
 void create_second_screen_tab1(lv_obj_t *padre) {
@@ -332,23 +336,27 @@ void create_second_screen_tab1(lv_obj_t *padre) {
 
     // Definir los textos de las etiquetas y sus posiciones Y en un array
     const char *textos[] = {
-            "¡HOLA! " "\xEE\xAD\x94",
-            "Soy una herramienta para que \n  puedas registrar de manera \n      interactiva tus lecturas \n      a través de mi cámara",
+            "#8035A8 ¡HOLA!# " "#8035A8 \xEE\xAD\x94#",
+            "Soy una herramienta para que puedas registrar de manera interactiva tus lecturas a través de mi cámara",
             "---------------------------------------",
             "\xF3\xB1\x89\x9F",
-            " Aquí podrás almacenar los \n  libros que estés leyendo",
+            "Aquí podrás almacenar los libros que estés leyendo",
             "\xF3\xB0\x81\xB2",
-            " Aquí podrás registrar tus \n           nuevos libros. \nPara ello deberás mostrar \n    a la cámara el código \n      de barras del libro",
+            "Aquí podrás registrar tus nuevos libros. Para ello deberás mostrar a la cámara el código de barras del libro",
             "\xF3\xB0\x84\xA8",
-            "Aquí podrás comprobar tu \n    avance con la lectura"
+            "Aquí podrás comprobar tu avance con la lectura"
     };
-    const int posicionesY[] = {20, 60, 150, 180, 210, 270, 300, 420, 450};
+    const int posicionesY[] = {20, 60, 150, 180, 210, 275, 305, 410, 440};
 
     // Crear y configurar las etiquetas en un bucle
     for(int i = 0; i < sizeof(textos) / sizeof(textos[0]); i++) {
         lv_obj_t *label = lv_label_create(screen2);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+        lv_label_set_recolor(label, true);
         lv_label_set_text(label, textos[i]);
         lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
+        lv_obj_set_width(label, 215);
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(label, LV_ALIGN_TOP_MID, 0, posicionesY[i]);
 
         // Aplicar la fuente más grande a las etiquetas con símbolos
@@ -378,6 +386,7 @@ void go_to_screen2_tab1(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 2---------------------------------------------------
+/*
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
@@ -426,6 +435,68 @@ void tab2_content(lv_obj_t * parent) {
             Serial.println("Failed to retrieve data.");
         }
     }
+}*/
+
+
+void tab2_content(lv_obj_t * parent) {
+    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
+
+    // Crea una lista en la pantalla
+    lv_obj_t * list = lv_list_create(parent);
+
+    // Establecer el estilo de la lista
+    static lv_style_t style_blue;
+    lv_style_init(&style_blue);
+    lv_style_set_bg_color(&style_blue, lv_color_hex(0xCBECFF));
+    lv_style_set_border_width(&style_blue, 0);
+    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
+    lv_style_set_radius(&style_blue, 1);
+    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
+
+    if (!libraryLoaded && Firebase.ready()) {
+        libraryLoaded = true;
+
+        DynamicJsonDocument doc = get_book_data();
+        std::vector<JsonObject> books;
+
+        for (JsonPair kv : doc.as<JsonObject>()) {
+            JsonObject book = kv.value().as<JsonObject>();
+            book["key"] = kv.key().c_str(); // Store the book key in the JsonObject
+            books.push_back(book);
+        }
+
+        // Ordenar los libros por la marca de tiempo
+        std::sort(books.begin(), books.end(), [](const JsonObject& a, const JsonObject& b) {
+            return a["ultima_modificacion"].as<long>() > b["ultima_modificacion"].as<long>();
+        });
+
+        // Establecer el tamaño y la posición de la lista
+        int num_books = books.size();
+        int list_height = num_books * 40;
+        lv_obj_set_size(list, 230, list_height);
+        lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
+
+        for (const JsonObject& book : books) {
+            String title = book["titulo"].as<String>();
+            String key = book["key"].as<String>(); // Use the book key stored in the JsonObject
+
+            char* keyCopy = new char[key.length() + 1];
+            strcpy(keyCopy, key.c_str());
+
+            lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", title.c_str());
+
+            // Establecer el estilo del botón
+            lv_obj_t * label = lv_obj_get_child(btn, NULL);
+            lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+            lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+            lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
+
+            lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy);
+        }
+    } else {
+        Serial.println("Failed to retrieve data.");
+    }
 }
 
 
@@ -441,11 +512,6 @@ void go_to_screen2_tab2(lv_event_t * e) {
     create_second_screen_tab2(main_screen, key);
 }
 
-
-lv_obj_t * label_title = NULL;
-lv_obj_t * label_author = NULL;
-lv_obj_t * label_total_pages = NULL;
-lv_obj_t * label_current_page = NULL;
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
 void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
@@ -468,7 +534,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_obj_set_style_text_font(label_symbols2, &ubuntu_regular_16, 0);
     lv_obj_set_pos(label_symbols2, 0, 290);
 
-    int posY = 25;
+    int posY = -120;
 
     DynamicJsonDocument doc = get_book_data(key);
     if (!doc.isNull()) {
@@ -479,26 +545,37 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
         // Crear las etiquetas y mostrar los datos del libro
         lv_obj_t * label_title = lv_label_create(screen2);
+        lv_label_set_long_mode(label_title, LV_LABEL_LONG_WRAP);
+        lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR);
+        lv_obj_set_width(label_title, 225);
         lv_label_set_text(label_title, titulo.c_str());
-        lv_obj_set_pos(label_title, 10, posY += 30);
         lv_obj_set_style_text_font(label_title, &bigger_symbols, 0);
-        lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR); // Ajusta el texto para que se pase a la siguiente línea si es demasiado largo
-        lv_obj_set_width(label_title, 225); // Establece el ancho máximo de la etiqueta
+        lv_obj_set_style_text_align(label_title, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(label_title, LV_ALIGN_CENTER, 0, posY += 30);
 
         lv_obj_t * label_author = lv_label_create(screen2);
+        lv_label_set_long_mode(label_author, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(label_author, 225);
         lv_label_set_text(label_author, ("Autor: " + autor).c_str());
-        lv_obj_set_pos(label_author, 10, posY += 40);
         lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
+        lv_obj_set_style_text_align(label_author, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(label_author, LV_ALIGN_CENTER, 0, posY += 40);
 
         lv_obj_t * label_total_pages = lv_label_create(screen2);
+        lv_label_set_long_mode(label_total_pages, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(label_total_pages, 225);
         lv_label_set_text(label_total_pages, (String(paginas_total) + " páginas en total").c_str());
-        lv_obj_set_pos(label_total_pages, 10, posY += 25);
         lv_obj_set_style_text_font(label_total_pages, &ubuntu_italic_16, 0);
+        lv_obj_set_style_text_align(label_total_pages, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(label_total_pages, LV_ALIGN_CENTER, 0, posY += 25);
 
         lv_obj_t * label_current_page = lv_label_create(screen2);
-        lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());
-        lv_obj_set_pos(label_current_page, 10, posY += 25);
+        lv_label_set_long_mode(label_current_page, LV_LABEL_LONG_WRAP);
+        lv_obj_set_width(label_current_page, 225);
+        lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());;
         lv_obj_set_style_text_font(label_current_page, &ubuntu_bold_16, 0);
+        lv_obj_set_style_text_align(label_current_page, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(label_current_page, LV_ALIGN_CENTER, 0, posY += 25);
     } else {
         Serial.println("Fallo al recuperar datos de Firebase.");
     }
@@ -507,7 +584,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 200);
+    create_button(screen2, symbol, BUTTON_STYLE_BLUE, back_to_main_menu, 95, 210);
 }
 
 
@@ -518,14 +595,12 @@ void tab3_content(lv_obj_t * parent) {
     general_title(parent, "ESCANEAR LIBRO", TITLE_STYLE_ORANGE);
 
     lv_obj_t * label = lv_label_create(parent);
-    lv_label_set_text(label, "¿Deseas agregar un nuevo \n     libro a tu biblioteca?");
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(label, "¿Deseas agregar un nuevo libro a tu biblioteca?\n\nPincha en el botón para abrir la cámara y escanear el ISBN");
     lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 50);
-
-    lv_obj_t * label2 = lv_label_create(parent);
-    lv_label_set_text(label2, "  Pincha en el botón para \nabrir la cámara y escanear \n               el libro");
-    lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
-    lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 110);
+    lv_obj_set_width(label, 200);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, -10);
 
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\x84\x84");
@@ -574,22 +649,22 @@ static void tab4_content(lv_obj_t * parent) {
 
     // Create containers for each book status
     lv_obj_t * container_unstarted = lv_obj_create(parent);
-    lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 210);
-    lv_obj_set_size(container_unstarted, 210, 100);
+    lv_obj_align(container_unstarted, LV_ALIGN_OUT_TOP_LEFT, 0, 290);
+    lv_obj_set_size(container_unstarted, 210, 200);
     lv_obj_set_style_bg_color(container_unstarted, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_unstarted, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_unstarted, 2, LV_PART_MAIN);
 
     lv_obj_t * container_in_progress = lv_obj_create(parent);
-    lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 210 + 100);
-    lv_obj_set_size(container_in_progress, 210, 100);
+    lv_obj_align(container_in_progress, LV_ALIGN_OUT_TOP_LEFT, 0, 565);
+    lv_obj_set_size(container_in_progress, 210, 200);
     lv_obj_set_style_bg_color(container_in_progress, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_in_progress, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_in_progress, 2, LV_PART_MAIN);
 
     lv_obj_t * container_finished = lv_obj_create(parent);
-    lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 310 + 100);
-    lv_obj_set_size(container_finished, 210, 100);
+    lv_obj_align(container_finished, LV_ALIGN_OUT_TOP_LEFT, 0, 855);
+    lv_obj_set_size(container_finished, 210, 200);
     lv_obj_set_style_bg_color(container_finished, lv_color_hex(0xD7ECD5), LV_PART_MAIN);
     lv_obj_set_style_border_color(container_finished, lv_color_hex(0x25B619), LV_PART_MAIN);
     lv_obj_set_style_border_width(container_finished, 2, LV_PART_MAIN);
@@ -659,35 +734,97 @@ static void tab4_content(lv_obj_t * parent) {
 
     // Create a label to display the book with the most pages read
     lv_obj_t * label1 = lv_label_create(parent);
+    lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label1, "Libro con más páginas leídas");
     lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
-    lv_obj_align(label1, LV_ALIGN_TOP_LEFT, 0, 50);
-    lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // Añade esta línea
-    lv_obj_set_width(label1, 230); // Ajusta el ancho al de tu contenedor
+    lv_obj_set_width(label1, 230);
+    lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -60);
 
     lv_obj_t * label11 = lv_label_create(parent);
+    lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP);
     String label1_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
     lv_label_set_text(label11, label1_text.c_str());
     lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
-    lv_obj_align(label11, LV_ALIGN_TOP_LEFT, 0, 70);
-    lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP); // Añade esta línea
-    lv_obj_set_width(label11, 230); // Ajusta el ancho al de tu contenedor
+    lv_obj_set_width(label11, 230);
+    lv_obj_set_style_text_align(label11, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label11, LV_ALIGN_CENTER, 0, -25);
+
+
 
     // Create a label to display the total pages read
     lv_obj_t * label2 = lv_label_create(parent);
+    lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label2, "Total de páginas leídas (entre todos los libros)");
     lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
-    lv_obj_align(label2, LV_ALIGN_TOP_LEFT, 0, 125);
-    lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP); // Añade esta línea
-    lv_obj_set_width(label2, 230); // Ajusta el ancho al de tu contenedor
+    lv_obj_set_width(label2, 230);
+    lv_obj_set_style_text_align(label2, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label2, LV_ALIGN_CENTER, 0, 40);
 
     lv_obj_t * label22 = lv_label_create(parent);
+    lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP);
     String label2_text = String(total_pages) + " páginas";
     lv_label_set_text(label22, label2_text.c_str());
     lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
-    lv_obj_align(label22, LV_ALIGN_TOP_LEFT, 0, 168); // Ajusta la posición en Y según sea necesario
-    lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP); // Añade esta línea
-    lv_obj_set_width(label22, 230); // Ajusta el ancho al de tu contenedor
+    lv_obj_set_width(label22, 230);
+    lv_obj_set_style_text_align(label22, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label22, LV_ALIGN_CENTER, 0, 75);
+
+
+    lv_obj_t * down_button1 = lv_btn_create(parent);
+    lv_obj_set_size(down_button1, 20, 20); // Set the size of the button
+    lv_obj_set_pos(down_button1, 90, 225); // Set the position of the button
+    lv_obj_add_event_cb(down_button1, event_handler_scroll1, LV_EVENT_CLICKED, parent); // Set the click event handler
+
+    lv_obj_t * down_symbol1 = lv_label_create(down_button1);
+    lv_obj_center(down_symbol1);
+    lv_label_set_text(down_symbol1, LV_SYMBOL_DOWN);
+
+    lv_obj_t * down_button2 = lv_btn_create(parent);
+    lv_obj_set_size(down_button2, 20, 20); // Set the size of the button
+    lv_obj_set_pos(down_button2, 90, 505); // Set the position of the button
+    lv_obj_add_event_cb(down_button2, event_handler_scroll2, LV_EVENT_CLICKED, parent); // Set the click event handler
+
+    lv_obj_t * down_symbol2 = lv_label_create(down_button2);
+    lv_obj_center(down_symbol2);
+    lv_label_set_text(down_symbol2, LV_SYMBOL_DOWN);
+
+    lv_obj_t * down_button3 = lv_btn_create(parent);
+    lv_obj_set_size(down_button3, 20, 20); // Set the size of the button
+    lv_obj_set_pos(down_button3, 90, 780); // Set the position of the button
+    lv_obj_add_event_cb(down_button3, event_handler_scroll3, LV_EVENT_CLICKED, parent); // Set the click event handler
+
+    lv_obj_t * down_symbol3 = lv_label_create(down_button3);
+    lv_obj_center(down_symbol3);
+    lv_label_set_text(down_symbol3, LV_SYMBOL_DOWN);
+
+    lv_obj_t * up_button = lv_btn_create(parent);
+    lv_obj_set_size(up_button, 20, 20); // Set the size of the button
+    lv_obj_set_pos(up_button, 90, 830); // Set the position of the button
+    lv_obj_add_event_cb(up_button, event_handler_top, LV_EVENT_CLICKED, parent); // Set the click event handler
+
+    lv_obj_t * up_symbol = lv_label_create(up_button);
+    lv_obj_center(up_symbol);
+    lv_label_set_text(up_symbol, LV_SYMBOL_UP);
+
+
+    // Create a style for the symbol
+    static lv_style_t style_symbol_up_down;
+    lv_style_init(&style_symbol_up_down);
+    lv_style_set_text_color(&style_symbol_up_down, lv_color_black()); // Set the text color to black
+    lv_obj_add_style(down_symbol1, &style_symbol_up_down, 0); // Apply the style to the down symbol
+    lv_obj_add_style(down_symbol2, &style_symbol_up_down, 0); // Apply the style to the down symbol
+    lv_obj_add_style(down_symbol3, &style_symbol_up_down, 0); // Apply the style to the down symbol
+    lv_obj_add_style(up_symbol, &style_symbol_up_down, 0); // Apply the style to the up symbol
+
+    // Set the button style to match the background color
+    static lv_style_t style_btn_up_down;
+    lv_style_init(&style_btn_up_down);
+    lv_style_set_bg_color(&style_btn_up_down, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
+    lv_obj_add_style(down_button1, &style_btn_up_down, 0);
+    lv_obj_add_style(down_button2, &style_btn_up_down, 0);
+    lv_obj_add_style(down_button3, &style_btn_up_down, 0);
+    lv_obj_add_style(up_button, &style_btn_up_down, 0);
 
 
     //Botón para ir a pantalla que muestra gráfica
@@ -695,8 +832,32 @@ static void tab4_content(lv_obj_t * parent) {
     lv_label_set_text(symbol, "\xF3\xB0\x84\xA8");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 530);
+    create_button(parent, symbol, BUTTON_STYLE_GREEN, go_to_screen2_tab4, 75, 1060);
 
+}
+
+static void event_handler_scroll1(lv_event_t * e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
+        lv_obj_scroll_to_y(screen2, 285, LV_ANIM_ON); // Scroll to the top of the screen
+    }
+}
+
+static void event_handler_scroll2(lv_event_t * e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
+        lv_obj_scroll_to_y(screen2, 560, LV_ANIM_ON); // Scroll to the top of the screen
+    }
+}
+
+static void event_handler_scroll3(lv_event_t * e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
+        lv_obj_scroll_to_y(screen2, 840, LV_ANIM_ON); // Scroll to the top of the screen
+    }
 }
 
 
@@ -768,20 +929,6 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_center(down_symbol);
     lv_label_set_text(down_symbol, LV_SYMBOL_DOWN);
 
-    // Create a style for the down symbol
-    static lv_style_t style_symbol;
-    lv_style_init(&style_symbol);
-    lv_style_set_text_color(&style_symbol, lv_color_black()); // Set the text color to black
-    lv_obj_add_style(down_symbol, &style_symbol, 0); // Apply the style to the down symbol
-
-    // Set the button style to match the background color
-    static lv_style_t style_bottom;
-    lv_style_init(&style_bottom);
-    lv_style_set_bg_color(&style_bottom, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
-    lv_obj_add_style(down_button, &style_bottom, 0);
-
-
-
     //Botón para desplazar pantalla hacia arriba automáticamente
     lv_obj_t * up_button = lv_btn_create(screen2);
     lv_obj_set_size(up_button, 20, 20); // Set the size of the button
@@ -793,18 +940,20 @@ void create_second_screen_tab4(lv_obj_t *padre) {
     lv_obj_center(up_symbol);
     lv_label_set_text(up_symbol, LV_SYMBOL_UP);
 
-    // Create a style for the up symbol
-    static lv_style_t style_symbol_up;
-    lv_style_init(&style_symbol_up);
-    lv_style_set_text_color(&style_symbol_up, lv_color_black()); // Set the text color to black
-    lv_obj_add_style(up_symbol, &style_symbol_up, 0); // Apply the style to the up symbol
+
+    // Create a style for the symbol
+    static lv_style_t style_symbol_up_down;
+    lv_style_init(&style_symbol_up_down);
+    lv_style_set_text_color(&style_symbol_up_down, lv_color_black()); // Set the text color to black
+    lv_obj_add_style(down_symbol, &style_symbol_up_down, 0); // Apply the style to the down symbol
+    lv_obj_add_style(up_symbol, &style_symbol_up_down, 0); // Apply the style to the up symbol
 
     // Set the button style to match the background color
-    static lv_style_t style_top;
-    lv_style_init(&style_top);
-    lv_style_set_bg_color(&style_top, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
-    lv_obj_add_style(up_button, &style_top, 0);
-
+    static lv_style_t style_btn_up_down;
+    lv_style_init(&style_btn_up_down);
+    lv_style_set_bg_color(&style_btn_up_down, lv_color_hex(0xCEF2D8)); // Set the background color to match the screen
+    lv_obj_add_style(down_button, &style_btn_up_down, 0);
+    lv_obj_add_style(up_button, &style_btn_up_down, 0);
 
 
     lv_obj_t * label = lv_label_create(container);

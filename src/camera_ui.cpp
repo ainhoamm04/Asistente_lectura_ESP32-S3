@@ -47,6 +47,9 @@ void stop_camera_task(void) {
             }
             vTaskDelay(10);
         }
+        strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
+        strip.show(); // Actualiza los LEDs
+
         Serial.println("loopTask_camera deleted!");
     }
 }
@@ -247,14 +250,14 @@ void loopTask_camera(void *pvParameters) {
         fb_buf = fb; //guardar el frame en un buffer
         esp_camera_fb_return(fb); //devolver el frame a la cámara para que pueda ser utilizado
         if (fb_buf != NULL) {
-            /*
+
             //Para cambiar los colores de RGB a BGR
             for (int i = 0; i < fb_buf->len; i += 2) {
                 uint8_t temp = 0;
                 temp = fb_buf->buf[i];
                 fb_buf->buf[i] = fb_buf->buf[i + 1];
                 fb_buf->buf[i + 1] = temp;
-            }*/
+            }
 
             /*
             //Para invertir los colores de la imagen. Los px oscuros se convierten en claros y viceversa
@@ -269,6 +272,7 @@ void loopTask_camera(void *pvParameters) {
             //uint8_t* new_buf = new uint8_t[fb_buf->len];
             //memcpy(new_buf, fb_buf->buf, fb_buf->len);
 
+            /*
             // Aplicar el filtro gaussiano
             applyGaussianFilter(fb_buf->buf, fb_buf->width, fb_buf->height);
 
@@ -294,10 +298,10 @@ void loopTask_camera(void *pvParameters) {
 
             // Actualizar la imagen mostrada
             photo_show.data = outputImage;
-            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);
+            lv_img_set_src(guider_camera_ui.camera_video, &photo_show);*/
 
-            //photo_show.data = new_buf; //guardar el frame en la variable de imagen
-            //lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
+            photo_show.data = fb_buf->buf; //guardar el frame en la variable de imagen
+            lv_img_set_src(guider_camera_ui.camera_video, &photo_show); //mostrar la imagen en la pantalla
 
         }
     }
@@ -311,11 +315,11 @@ void ui_set_photo_show(void) {
     header.always_zero = 0;
     header.w = 240;
     header.h = 240;
-    //header.cf = LV_IMG_CF_TRUE_COLOR;
-    header.cf = LV_IMG_CF_ALPHA_8BIT;
+    header.cf = LV_IMG_CF_TRUE_COLOR;
+    //header.cf = LV_IMG_CF_ALPHA_8BIT;
     photo_show.header = header;
-    //photo_show.data_size = 240 * 240 * 2; //2 bytes en RGB
-    photo_show.data_size = 240 * 240 * 1; //1 byte en grayscale
+    photo_show.data_size = 240 * 240 * 2; //2 bytes en RGB
+    //photo_show.data_size = 240 * 240 * 1; //1 byte en grayscale
     photo_show.data = NULL;
 }
 
@@ -327,10 +331,10 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
     if (code == LV_EVENT_CLICKED) {
         Serial.println("Clicked the camera button.");
         if (camera_task_flag == 1) {
-            //stop_camera_task();
-            //set_book_number();
-            //searchIsbnInDatabase();
-            //go_to_screen2(e);
+            stop_camera_task();
+            set_book_number();
+            searchIsbnInDatabase();
+            go_to_screen2(e);
             //create_camera_task();
 
         }
@@ -345,9 +349,6 @@ static void camera_imgbtn_home_event_handler(lv_event_t *e) {
 
     if (code == LV_EVENT_CLICKED) {
         stop_camera_task();
-
-        strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
-        strip.show(); // Actualiza los LEDs
 
         Serial.println("Clicked the home button.");
         back_to_main_menu(e); // Llamada a la función

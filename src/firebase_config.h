@@ -31,6 +31,7 @@ extern String path;
 // Declaración de la función para configurar Firebase
 void setup_firebase();
 DynamicJsonDocument get_book_data(const std::string& key = "");
+//std::vector<JsonObject> get_book_data();
 void update_current_page(const std::string& key, int page);
 
 #endif //INTERFAZ_GRAFICA_MENU_FIREBASE_CONFIG_H
