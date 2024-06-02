@@ -79,35 +79,7 @@ void setup_firebase() {
 }
 
 
-std::vector<JsonObject> get_book_data() {
-    std::vector<JsonObject> books;
 
-    String path = "/libros";
-    if (Firebase.RTDB.get(&fbdo, path.c_str())) {
-        if (fbdo.dataType() == "json") {
-            FirebaseJson *json = fbdo.jsonObjectPtr();
-            String jsonString;
-            json->toString(jsonString);
-
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, jsonString);
-
-            for (JsonPair kv : doc.as<JsonObject>()) {
-                books.push_back(kv.value().as<JsonObject>());
-            }
-        }
-    }
-
-    // Ordenar los libros por timestamp
-    std::sort(books.begin(), books.end(), [](const JsonObject& a, const JsonObject& b) {
-        return a["ultima_modificacion"].as<unsigned long long>() > b["ultima_modificacion"].as<unsigned long long>();
-    });
-
-    return books;
-}
-
-
-/*
 DynamicJsonDocument get_book_data(const std::string& key) {
     String path = "/libros";
     if (!key.empty()) {
@@ -136,7 +108,7 @@ DynamicJsonDocument get_book_data(const std::string& key) {
     }
     DynamicJsonDocument doc(1024);
     return doc;
-}*/
+}
 
 
 void update_current_page(const std::string& key, int page) {
