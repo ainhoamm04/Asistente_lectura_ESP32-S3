@@ -531,7 +531,8 @@ String get_book_number() {
     return isbn_aux;
 }
 
-
+/*
+//FUNCION ANTIGUA BUENA
 void searchIsbnInDatabase() {
     // Obtén el ISBN aleatorio
     String randomIsbn = get_book_number();
@@ -573,8 +574,51 @@ void searchIsbnInDatabase() {
     if (!book_found) {
         Serial.println("Libro no encontrado");
     }
-}
+}*/
 
+
+void searchIsbnInDatabase() {
+    // Obtén el ISBN aleatorio
+    String randomIsbn = get_book_number();
+
+    // Inicializa book_found a false
+    book_found = false;
+
+    // Llama a la función get_book_data() en firebase_config.cpp
+    std::vector<JsonObject> books = get_book_data();
+
+    // Recorre todos los libros en la base de datos
+    for(auto& book : books) {
+        // Compara el ISBN de cada libro con el ISBN aleatorio
+        String isbn = book["isbn"].as<String>();
+        if (isbn == randomIsbn) {
+            book_found = true;
+
+            // Almacena la clave del libro
+            book_key = book["key"].as<String>();
+
+            // Si encuentras un libro con el mismo ISBN, guarda los datos
+            title = book["titulo"].as<String>();
+            author = book["autor"].as<String>();
+            totalPages = book["paginas_total"].as<int>();
+            currentPage = book["pagina_actual"].as<int>();
+
+            // Aquí puedes hacer lo que necesites con los datos del libro
+            // Por ejemplo, podrías imprimirlos en la consola
+            Serial.println("Libro encontrado:");
+            Serial.println("Titulo: " + title);
+            Serial.println("Autor: " + author);
+            Serial.println("Paginas totales: " + String(totalPages));
+            Serial.println("Pagina actual: " + String(currentPage));
+            break;
+        }
+    }
+
+    // Si no se encontró el libro, imprime "Libro no encontrado"
+    if (!book_found) {
+        Serial.println("Libro no encontrado");
+    }
+}
 
 // Declaración de la función de devolución de llamada
 static void keyboard_event_cb(lv_event_t * e);

@@ -78,7 +78,7 @@ void setup_firebase() {
     Firebase.reconnectWiFi(true);
 }
 
-/*
+
 std::vector<JsonObject> get_book_data() {
     std::vector<JsonObject> books;
 
@@ -98,16 +98,16 @@ std::vector<JsonObject> get_book_data() {
         }
     }
 
-    // Ordenar los libros por la marca de tiempo
+    // Ordenar los libros por timestamp
     std::sort(books.begin(), books.end(), [](const JsonObject& a, const JsonObject& b) {
-        return a["ultima_modificacion"].as<long>() > b["ultima_modificacion"].as<long>();
+        return a["ultima_modificacion"].as<unsigned long long>() > b["ultima_modificacion"].as<unsigned long long>();
     });
 
     return books;
-}*/
+}
 
 
-
+/*
 DynamicJsonDocument get_book_data(const std::string& key) {
     String path = "/libros";
     if (!key.empty()) {
@@ -136,7 +136,7 @@ DynamicJsonDocument get_book_data(const std::string& key) {
     }
     DynamicJsonDocument doc(1024);
     return doc;
-}
+}*/
 
 
 void update_current_page(const std::string& key, int page) {
