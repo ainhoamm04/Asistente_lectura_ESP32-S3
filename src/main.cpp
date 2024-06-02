@@ -386,62 +386,13 @@ void go_to_screen2_tab1(lv_event_t * e) {
 
 
 //--------------------------------------PESTAÑA 2---------------------------------------------------
-/*
-void tab2_content(lv_obj_t * parent) {
-    general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
-
-    // Crea una lista en la pantalla
-    lv_obj_t * list = lv_list_create(parent);
-
-    static lv_style_t style_blue;
-    lv_style_init(&style_blue);
-    lv_style_set_bg_color(&style_blue, lv_color_hex(0xCBECFF));
-    lv_style_set_border_width(&style_blue, 0);
-    lv_style_set_border_color(&style_blue, lv_color_make(10, 154, 254));
-    lv_style_set_radius(&style_blue, 1);
-
-    lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
-
-    if (!libraryLoaded && Firebase.ready()) {
-        libraryLoaded = true;
-
-        DynamicJsonDocument doc = get_book_data();
-        if (!doc.isNull()) {
-            // Obtiene el número total de libros antes de entrar en el bucle
-            int num_books = doc.as<JsonObject>().size();
-            int list_height = num_books * 40;
-            lv_obj_set_size(list, 230, list_height);
-            lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
-
-            for(JsonPair kv : doc.as<JsonObject>()) {
-                String key = kv.key().c_str();
-                char* keyCopy = new char[key.length() + 1]; // Crear un nuevo array de caracteres en la memoria dinámica
-                strcpy(keyCopy, key.c_str()); // Copiar la clave en el nuevo array de caracteres
-                //keys.push_back(std::string(key.c_str())); // Convert Arduino String to std::string
-
-                String title = kv.value()["titulo"].as<String>();
-
-                lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", title.c_str());
-
-                lv_obj_t * label = lv_obj_get_child(btn, NULL);
-                lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-                lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
-            }
-        } else {
-            Serial.println("Failed to retrieve data.");
-        }
-    }
-}*/
-
-
+//Generación de estructura para hacer más fácil el manejo de los libros para ordenarlos
 struct Book {
     String title;
     String key;
+    long long timestamp;
 };
+
 
 void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
@@ -467,67 +418,24 @@ void tab2_content(lv_obj_t * parent) {
             lv_obj_set_size(list, 230, list_height);
             lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
 
-            std::vector<Book> unstarted_books;
-            std::vector<Book> in_progress_books;
-            std::vector<Book> finished_books;
+            std::vector<Book> books;
 
             for(JsonPair kv : doc.as<JsonObject>()) {
                 String key = kv.key().c_str();
                 String title = kv.value()["titulo"].as<String>();
+                long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
 
-                int current_pages = kv.value()["pagina_actual"].as<int>();
-                int total_pages_book = kv.value()["paginas_total"].as<int>();
-
-                Book book = {title, key};
-
-                if(current_pages == total_pages_book) {
-                    finished_books.push_back(book);
-                } else if(current_pages == 0) {
-                    unstarted_books.push_back(book);
-                } else {
-                    in_progress_books.push_back(book);
-                }
+                Book book = {title, key, timestamp};
+                books.push_back(book);
             }
 
-            // Primero, mostrar los libros en progreso
-            for (int i = 0; i < in_progress_books.size(); i++) {
-                const Book& book = in_progress_books[i];
-                char* titleCopy = new char[book.title.length() + 1];
-                strcpy(titleCopy, book.title.c_str());
-                char* keyCopy = new char[book.key.length() + 1];
-                strcpy(keyCopy, book.key.c_str());
-                lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy);
+            // Ordenar los libros por timestamp en orden descendente
+            std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
+                return a.timestamp > b.timestamp;
+            });
 
-                lv_obj_t * label = lv_obj_get_child(btn, NULL);
-                lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-                lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
-            }
-
-            // Luego, mostrar los libros sin empezar
-            for (int i = 0; i < unstarted_books.size(); i++) {
-                const Book& book = unstarted_books[i];
-                char* titleCopy = new char[book.title.length() + 1];
-                strcpy(titleCopy, book.title.c_str());
-                char* keyCopy = new char[book.key.length() + 1];
-                strcpy(keyCopy, book.key.c_str());
-                lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy);
-
-                lv_obj_t * label = lv_obj_get_child(btn, NULL);
-                lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-                lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
-            }
-
-            // Finalmente, mostrar los libros terminados
-            for (int i = 0; i < finished_books.size(); i++) {
-                const Book& book = finished_books[i];
+            // Mostrar los libros en la lista
+            for (const Book& book : books) {
                 char* titleCopy = new char[book.title.length() + 1];
                 strcpy(titleCopy, book.title.c_str());
                 char* keyCopy = new char[book.key.length() + 1];
