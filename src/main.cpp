@@ -626,8 +626,8 @@ static void tab4_content(lv_obj_t * parent) {
     DynamicJsonDocument doc = get_book_data(); // Get all books
 
     int total_pages = 0; // Variable para almacenar el total de páginas leídas
-    String most_recent_book_title;
-    long long most_recent_timestamp = 0;
+
+    std::vector<Book> books;
 
     // Create containers for each book status
     lv_obj_t * container_unstarted = lv_obj_create(parent);
@@ -677,18 +677,17 @@ static void tab4_content(lv_obj_t * parent) {
         int current_pages = kv.value()["pagina_actual"].as<int>();
         int total_pages_book = kv.value()["paginas_total"].as<int>();
         String title = kv.value()["titulo"].as<String>();
+        String key = kv.key().c_str();
+        long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
+
+        Book book = {title, key, timestamp};
+        books.push_back(book);
 
         total_pages += current_pages; // Suma las páginas actuales al total
 
         if(current_pages > max_pages) {
             max_pages = current_pages;
             max_pages_book_title = title;
-        }
-
-        long long timestamp = kv.value()["timestamp"].as<long long>();
-        if (timestamp > most_recent_timestamp) {
-            most_recent_timestamp = timestamp;
-            most_recent_book_title = title;
         }
 
         // Check the reading status of the book and create the corresponding label
@@ -721,6 +720,14 @@ static void tab4_content(lv_obj_t * parent) {
     Serial.println("\n" + String(count_in_progress) + "\n");
 
     // Create a label to display the actual book
+    // Ordenar los libros por timestamp en orden descendente
+    std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
+        return a.timestamp > b.timestamp;
+    });
+
+    // El libro más reciente es el primero en el vector
+    String most_recent_book_title = books[0].title;
+
     lv_obj_t * label1 = lv_label_create(parent);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label1, "Libro actual");
@@ -745,7 +752,7 @@ static void tab4_content(lv_obj_t * parent) {
     lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
     lv_obj_set_width(label2, 230);
     lv_obj_set_style_text_align(label2, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label2, LV_ALIGN_CENTER, 0, -15);
+    lv_obj_align(label2, LV_ALIGN_CENTER, 0, -12);
 
     lv_obj_t * label22 = lv_label_create(parent);
     lv_label_set_long_mode(label22, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -754,7 +761,7 @@ static void tab4_content(lv_obj_t * parent) {
     lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
     lv_obj_set_width(label22, 230);
     lv_obj_set_style_text_align(label22, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label22, LV_ALIGN_CENTER, 0, 5);
+    lv_obj_align(label22, LV_ALIGN_CENTER, 0, 8);
 
     // Create a label to display the total pages read
     lv_obj_t * label3 = lv_label_create(parent);
