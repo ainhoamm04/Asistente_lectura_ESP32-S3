@@ -25,7 +25,6 @@ extern const char* WIFI_PASSWORD;
 extern unsigned long sendDataPrevMillis;
 extern unsigned long count;
 extern bool signupOK;
-extern bool libraryLoaded;
 extern String path;
 
 // Declaración de la función para configurar Firebase

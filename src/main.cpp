@@ -14,6 +14,10 @@
 #include <ArduinoJson.h>
 #include <FirebaseJson.h>
 
+//Definición aquí (en lugar de platformio.ini) para que no de error strip
+#define LEDS_COUNT 1
+#define LEDS_PIN 48
+#define CHANNEL 0
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 Display screen;
@@ -48,15 +52,13 @@ static void tab1_content(lv_obj_t * parent);
 void create_second_screen_tab1(lv_obj_t *padre);
 void go_to_screen2_tab1(lv_event_t * e);
 
-extern void tab2_content(lv_obj_t * parent);
+static void tab2_content(lv_obj_t * parent);
 void create_second_screen_tab2(lv_obj_t * parent, const std::string& key);
 void go_to_screen2_tab2(lv_event_t * e);
 
-void tab3_content(lv_obj_t * parent);
+static void tab3_content(lv_obj_t * parent);
 void create_second_screen_tab3(lv_obj_t *padre);
 static void go_to_screen2_tab3(lv_event_t * e);
-void searchIsbnInDatabase();
-void initialize_and_load_camera();
 
 static void tab4_content(lv_obj_t * parent);
 void create_second_screen_tab4(lv_obj_t *padre);
@@ -68,6 +70,8 @@ static void event_handler_bottom(lv_event_t * e);
 static void event_handler_top(lv_event_t * e);
 static void draw_label_x_axis(lv_event_t * e);
 static void draw_label_y_axis(lv_event_t * e);
+
+void tabview_event_handler(lv_event_t * e);
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -101,6 +105,10 @@ void loop() {
 
 
 //-------------------------DEFINICIÓN DE FUNCIONES------------------------------------
+lv_obj_t * tab1;
+lv_obj_t * tab2;
+lv_obj_t * tab3;
+lv_obj_t * tab4;
 
 void tab_function(void)
 {
@@ -108,10 +116,10 @@ void tab_function(void)
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
 
     //Add 4 tabs (the tabs are page (lv_page) and can be scrolled
-    lv_obj_t * tab1 = lv_tabview_add_tab(tabview, "\xF3\xB0\x8B\x9C");
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "\xF3\xB1\x89\x9F");
-    lv_obj_t * tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
-    lv_obj_t * tab4 = lv_tabview_add_tab(tabview, "\xF3\xB0\x84\xA8");
+    tab1 = lv_tabview_add_tab(tabview, "\xF3\xB0\x8B\x9C");
+    tab2 = lv_tabview_add_tab(tabview, "\xF3\xB1\x89\x9F");
+    tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
+    tab4 = lv_tabview_add_tab(tabview, "\xF3\xB0\x84\xA8");
 
     lv_obj_t * tab_btns = lv_tabview_get_tab_btns(tabview);
     lv_obj_set_style_text_font(tab_btns, &bigger_symbols, 0);
@@ -144,7 +152,26 @@ void tab_function(void)
     tab2_content(tab2);
     tab3_content(tab3);
     tab4_content(tab4);
+
+    lv_obj_add_event_cb(tabview, tabview_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 }
+
+
+void tabview_event_handler(lv_event_t * e) {
+    lv_obj_t * tabview = lv_event_get_target(e);
+    uint16_t tab = lv_tabview_get_tab_act(tabview);
+    if (tab == 1) { // Si la pestaña 2 está seleccionada (los índices de las pestañas comienzan en 0)
+        lv_obj_clean(tab2);
+        tab2_content(tab2); // Llama a tab2_content
+        Serial.println("Tab 2");
+    }
+    else if (tab == 3) { // Si la pestaña 4 está seleccionada
+        lv_obj_clean(tab4);
+        tab4_content(tab4); // Llama a tab4_content
+        Serial.println("Tab 4");
+    }
+}
+
 
 
 //---------------------------------Funciones generales------------------------------------------
@@ -394,7 +421,7 @@ struct Book {
 };
 
 
-void tab2_content(lv_obj_t * parent) {
+static void tab2_content(lv_obj_t * parent) {
     general_title(parent, "MIS LIBROS", TITLE_STYLE_BLUE);
 
     lv_obj_t * list = lv_list_create(parent);
@@ -408,19 +435,16 @@ void tab2_content(lv_obj_t * parent) {
 
     lv_obj_add_style(list, &style_blue , LV_STATE_DEFAULT);
 
-    if (!libraryLoaded && Firebase.ready()) {
-        libraryLoaded = true;
+    DynamicJsonDocument doc = get_book_data();
+    if (!doc.isNull()) {
+        int num_books = doc.as<JsonObject>().size();
+        int list_height = num_books * 40;
+        lv_obj_set_size(list, 230, list_height);
+        lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
 
-        DynamicJsonDocument doc = get_book_data();
-        if (!doc.isNull()) {
-            int num_books = doc.as<JsonObject>().size();
-            int list_height = num_books * 40;
-            lv_obj_set_size(list, 230, list_height);
-            lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
+        std::vector<Book> books;
 
-            std::vector<Book> books;
-
-            for(JsonPair kv : doc.as<JsonObject>()) {
+        for(JsonPair kv : doc.as<JsonObject>()) {
                 String key = kv.key().c_str();
                 String title = kv.value()["titulo"].as<String>();
                 long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
@@ -429,31 +453,31 @@ void tab2_content(lv_obj_t * parent) {
                 books.push_back(book);
             }
 
-            // Ordenar los libros por timestamp en orden descendente
-            std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
+        // Ordenar los libros por timestamp en orden descendente
+        std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
                 return a.timestamp > b.timestamp;
             });
 
-            // Mostrar los libros en la lista
-            for (const Book& book : books) {
-                char* titleCopy = new char[book.title.length() + 1];
-                strcpy(titleCopy, book.title.c_str());
-                char* keyCopy = new char[book.key.length() + 1];
-                strcpy(keyCopy, book.key.c_str());
-                lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy);
+        // Mostrar los libros en la lista
+        for (const Book& book : books) {
+            char* titleCopy = new char[book.title.length() + 1];
+            strcpy(titleCopy, book.title.c_str());
+            char* keyCopy = new char[book.key.length() + 1];
+            strcpy(keyCopy, book.key.c_str());
+            lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy);
 
-                lv_obj_t * label = lv_obj_get_child(btn, NULL);
-                lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+            lv_obj_t * label = lv_obj_get_child(btn, NULL);
+            lv_obj_set_style_text_font(label, &bigger_symbols, 0);
 
-                lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
-                lv_obj_set_style_text_color(btn, lv_color_black(), 0);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
-                lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
-            }
-        } else {
-            Serial.println("Failed to retrieve data.");
+            lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
+            lv_obj_set_style_text_color(btn, lv_color_black(), 0);
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0xCBECFF), 0);
+            lv_obj_add_event_cb(btn, go_to_screen2_tab2, LV_EVENT_CLICKED, keyCopy); // Use the char* version of the key
         }
+    } else {
+        Serial.println("Failed to retrieve data.");
     }
+
 }
 
 
@@ -502,7 +526,6 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
         // Crear las etiquetas y mostrar los datos del libro
         lv_obj_t * label_title = lv_label_create(screen2);
-        lv_label_set_long_mode(label_title, LV_LABEL_LONG_WRAP);
         lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR);
         lv_obj_set_width(label_title, 225);
         lv_label_set_text(label_title, titulo.c_str());
@@ -548,7 +571,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
 
 //--------------------------------------PESTAÑA 3---------------------------------------------------
-void tab3_content(lv_obj_t * parent) {
+static void tab3_content(lv_obj_t * parent) {
     general_title(parent, "ESCANEAR LIBRO", TITLE_STYLE_ORANGE);
 
     lv_obj_t * label = lv_label_create(parent);
@@ -603,6 +626,8 @@ static void tab4_content(lv_obj_t * parent) {
     DynamicJsonDocument doc = get_book_data(); // Get all books
 
     int total_pages = 0; // Variable para almacenar el total de páginas leídas
+    String most_recent_book_title;
+    long long most_recent_timestamp = 0;
 
     // Create containers for each book status
     lv_obj_t * container_unstarted = lv_obj_create(parent);
@@ -660,6 +685,12 @@ static void tab4_content(lv_obj_t * parent) {
             max_pages_book_title = title;
         }
 
+        long long timestamp = kv.value()["timestamp"].as<long long>();
+        if (timestamp > most_recent_timestamp) {
+            most_recent_timestamp = timestamp;
+            most_recent_book_title = title;
+        }
+
         // Check the reading status of the book and create the corresponding label
         lv_obj_t * status_label = NULL;
         String status_label_text = title;
@@ -689,48 +720,64 @@ static void tab4_content(lv_obj_t * parent) {
     Serial.println("\n" + String(count_unstarted) + "\n");
     Serial.println("\n" + String(count_in_progress) + "\n");
 
-    // Create a label to display the book with the most pages read
+    // Create a label to display the actual book
     lv_obj_t * label1 = lv_label_create(parent);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(label1, "Libro con más páginas leídas");
+    lv_label_set_text(label1, "Libro actual");
     lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
     lv_obj_set_width(label1, 230);
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -60);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -65);
 
     lv_obj_t * label11 = lv_label_create(parent);
-    lv_label_set_long_mode(label11, LV_LABEL_LONG_WRAP);
-    String label1_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
+    lv_label_set_long_mode(label11, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    String label1_text = most_recent_book_title;
     lv_label_set_text(label11, label1_text.c_str());
     lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
     lv_obj_set_width(label11, 230);
     lv_obj_set_style_text_align(label11, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label11, LV_ALIGN_CENTER, 0, -25);
+    lv_obj_align(label11, LV_ALIGN_CENTER, 0, -45);
 
-
-
-    // Create a label to display the total pages read
+    // Create a label to display the book with the most pages read
     lv_obj_t * label2 = lv_label_create(parent);
     lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(label2, "Total de páginas leídas (entre todos los libros)");
+    lv_label_set_text(label2, "Libro con más páginas leídas");
     lv_obj_set_style_text_font(label2, &ubuntu_bold_16, 0);
     lv_obj_set_width(label2, 230);
     lv_obj_set_style_text_align(label2, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label2, LV_ALIGN_CENTER, 0, 40);
+    lv_obj_align(label2, LV_ALIGN_CENTER, 0, -15);
 
     lv_obj_t * label22 = lv_label_create(parent);
-    lv_label_set_long_mode(label22, LV_LABEL_LONG_WRAP);
-    String label2_text = String(total_pages) + " páginas";
+    lv_label_set_long_mode(label22, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    String label2_text = max_pages_book_title + " (" + String(max_pages) + " páginas)";
     lv_label_set_text(label22, label2_text.c_str());
     lv_obj_set_style_text_font(label22, &ubuntu_regular_16, 0);
     lv_obj_set_width(label22, 230);
     lv_obj_set_style_text_align(label22, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label22, LV_ALIGN_CENTER, 0, 75);
+    lv_obj_align(label22, LV_ALIGN_CENTER, 0, 5);
+
+    // Create a label to display the total pages read
+    lv_obj_t * label3 = lv_label_create(parent);
+    lv_label_set_long_mode(label3, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(label3, "Total de páginas leídas (entre todos los libros)");
+    lv_obj_set_style_text_font(label3, &ubuntu_bold_16, 0);
+    lv_obj_set_width(label3, 230);
+    lv_obj_set_style_text_align(label3, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 50);
+
+    lv_obj_t * label33 = lv_label_create(parent);
+    lv_label_set_long_mode(label33, LV_LABEL_LONG_WRAP);
+    String label3_text = String(total_pages) + " páginas";
+    lv_label_set_text(label33, label3_text.c_str());
+    lv_obj_set_style_text_font(label33, &ubuntu_regular_16, 0);
+    lv_obj_set_width(label33, 230);
+    lv_obj_set_style_text_align(label33, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label33, LV_ALIGN_CENTER, 0, 80);
 
 
     lv_obj_t * down_button1 = lv_btn_create(parent);
     lv_obj_set_size(down_button1, 20, 20); // Set the size of the button
-    lv_obj_set_pos(down_button1, 90, 225); // Set the position of the button
+    lv_obj_set_pos(down_button1, 90, 230); // Set the position of the button
     lv_obj_add_event_cb(down_button1, event_handler_scroll1, LV_EVENT_CLICKED, parent); // Set the click event handler
 
     lv_obj_t * down_symbol1 = lv_label_create(down_button1);

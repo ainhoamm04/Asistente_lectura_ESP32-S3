@@ -37,7 +37,6 @@ FirebaseConfig config;
 unsigned long sendDataPrevMillis = 0;
 unsigned long count = 0;
 bool signupOK = false;
-bool libraryLoaded = false;
 String path = "/libros";
 
 // Definición de la función para configurar Firebase

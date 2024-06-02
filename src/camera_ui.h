@@ -30,7 +30,6 @@ void ui_set_photo_show(void);                //Initialize an lvgl image variable
 void setup_scr_camera(lvgl_camera_ui *ui);   //Parameter configuration function on the camera screen
 
 void back_to_main_menu(lv_event_t * e);
-void go_to_screen2_tab2(lv_event_t * e);
 void create_second_screen(lv_obj_t *padre);
 static void go_to_screen2(lv_event_t * e);
 
