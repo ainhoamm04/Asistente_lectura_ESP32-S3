@@ -90,16 +90,26 @@ void setup() {
 
     strip.begin();
     strip.setBrightness(255);
-
 }
 
 
 
 //-------------------------------LOOP------------------------------------
+String decoded_barcode;
+
 void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
     Firebase.ready();
+
+    if (Serial.available() > 0) {  // Si hay datos disponibles en el puerto serial
+        char buffer[32];  // Buffer para almacenar los datos recibidos
+        int bytesRead = Serial.readBytes(buffer, sizeof(buffer) - 1);  // Lee los bytes del puerto serie
+        buffer[bytesRead] = '\0';  // Asegúrate de que la cadena esté terminada en null
+        decoded_barcode = String(buffer);  // Convierte los bytes leídos en una cadena
+        Serial.println(decoded_barcode);  // Imprime la cadena leída en el Monitor Serial
+        Serial.println("Código leído desde Python");
+    }
 }
 
 
