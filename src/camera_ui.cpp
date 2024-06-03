@@ -337,7 +337,33 @@ static void camera_imgbtn_photo_event_handler(lv_event_t *e) {
             go_to_screen2(e);
             //create_camera_task();
 
+            //----------------Echar foto---------------
+            fb = esp_camera_fb_get();
+
+            if (fb != NULL) {
+
+                Serial.println("4a");
+                for (int i = 0; i < fb->len; i += 2) {
+                    uint8_t temp = 0;
+                    temp = fb->buf[i];
+                    fb->buf[i] = fb->buf[i + 1];
+                    fb->buf[i + 1] = temp;
+                }
+                int photo_index = list_count_number(list_picture);
+                Serial.printf("photo_index: %d\r\n", photo_index);
+                if (photo_index != -1) {
+                    String path = String(PICTURE_FOLDER) + "/" + String(++photo_index) + ".bmp";  //You can view it directly from your computer
+                    write_rgb565_to_bmp((char *)path.c_str(), fb->buf, fb->len, fb->height, fb->width);
+                    list_insert_tail(list_picture, (char *)path.c_str());
+                }
+            } else {
+
+                Serial.println("4b");
+                Serial.println("Camera capture failed.");
+            }
+            esp_camera_fb_return(fb);
         }
+        //create_camera_task();
     }
 }
 

@@ -63,6 +63,7 @@ void write_file(char *path, uint8_t *buf, long size){
 }
 
 //Writes anything to the pointed file, save as bmp.
+//OPENCV NO RECONOCE ESTE TIPO DE CABECERA
 void write_rgb565_to_bmp(char *path, uint8_t *buf, long size, long height, long width){
   File file = SD_MMC.open(path, FILE_WRITE);
   if (!file) {
@@ -84,6 +85,8 @@ void write_rgb565_to_bmp(char *path, uint8_t *buf, long size, long height, long 
   file.write(bmp_efo, 2);
   file.close();
 }
+
+
 
 //If the folder does not exist, create a folder
 void create_folder(char *path){
