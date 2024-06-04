@@ -6,6 +6,7 @@
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 #include "Freenove_WS2812_Lib_for_ESP32.h"
+#include <ESP32QRCodeReader.h>
 
 extern Freenove_ESP32_WS2812 strip;
 
@@ -14,8 +15,9 @@ lvgl_camera_ui guider_camera_ui;  //camera ui structure
 camera_fb_t *fb = NULL;           //data structure of camera frame buffer
 camera_fb_t *fb_buf = NULL;
 TaskHandle_t cameraTaskHandle;    //camera thread task handle
+TaskHandle_t qrCodeTaskHandle;    // tarea de decodificación de códigos QR
 static int camera_task_flag = 0;  //camera thread running flag
-
+static int qrCode_task_flag = 0;  // flag de la tarea de decodificación de códigos QR
 
 bool book_found = false;
 String book_key;
@@ -25,24 +27,31 @@ int totalPages;
 int currentPage;
 
 
+
+ESP32QRCodeReader reader(CAMERA_MODEL_ESP32S3_EYE);
+
 //Create camera task thread
 void create_camera_task(void) {
-    if (camera_task_flag == 0) {
+    if (camera_task_flag == 0 && qrCode_task_flag == 0) {
         camera_task_flag = 1;
+        qrCode_task_flag = 1;
         ui_set_photo_show();
-        //disableCore0WDT();
-        xTaskCreate(loopTask_camera, "loopTask_camera", 8192, NULL, 1, &cameraTaskHandle);
+        //disableCore0WDT(); // Desactiva el WDT del núcleo 0
+        xTaskCreate(loopTask_camera, "loopTask_camera", 8192, NULL, 2, &cameraTaskHandle);
+        xTaskCreate(onQrCodeTask, "onQrCodeTask", 4 * 1024, NULL, 1, &qrCodeTaskHandle);
     } else {
-        Serial.println("loopTask_camera is running...");
+        Serial.println("loopTask_camera or onQrCodeTask is running...");
     }
 }
 
 //Close the camera thread
 void stop_camera_task(void) {
-    if (camera_task_flag == 1) {
+    if (camera_task_flag == 1 && qrCode_task_flag == 1) {
         camera_task_flag = 0;
+        qrCode_task_flag = 0;
+
         while (1) {
-            if (eTaskGetState(cameraTaskHandle) == eDeleted) {
+            if (eTaskGetState(cameraTaskHandle) == eDeleted && eTaskGetState(qrCodeTaskHandle) == eDeleted) {
                 break;
             }
             vTaskDelay(10);
@@ -50,7 +59,7 @@ void stop_camera_task(void) {
         strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
         strip.show(); // Actualiza los LEDs
 
-        Serial.println("loopTask_camera deleted!");
+        Serial.println("loopTask_camera and onQrCodeTask deleted!");
     }
 }
 
@@ -84,6 +93,38 @@ void loopTask_camera(void *pvParameters) {
 
     vTaskDelete(cameraTaskHandle);
 }
+
+
+// Declara la variable global
+String qrCodeContent;
+void onQrCodeTask(void *pvParameters) {
+    struct QRCodeData qrCodeData;
+
+    while (qrCode_task_flag)
+    {
+        if (reader.receiveQrCode(&qrCodeData, 100))
+        {
+            Serial.println("Found QRCode");
+            if (qrCodeData.valid)
+            {
+                Serial.print("Payload: ");
+                Serial.println((const char *)qrCodeData.payload);
+
+                // Guarda el contenido del código QR en la variable global
+                qrCodeContent = String((const char *)qrCodeData.payload);
+                Serial.println("Contenido decodificado " + qrCodeContent);
+            }
+            else
+            {
+                Serial.print("Invalid: ");
+                Serial.println((const char *)qrCodeData.payload);
+            }
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(qrCodeTaskHandle);
+}
+
 
 //Initialize an lvgl image variable
 void ui_set_photo_show(void) {

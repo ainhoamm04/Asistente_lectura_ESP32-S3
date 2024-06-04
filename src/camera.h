@@ -2,8 +2,6 @@
 #define __CAMERA_H
 
 #include "Arduino.h"
-//#define CAMERA_MODEL_ESP32S3_EYE
-//#define CAMERA_MODEL_WROVER_KIT
 #include "camera_pins.h"
 #include "esp_camera.h"
 

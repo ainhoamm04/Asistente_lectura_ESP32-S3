@@ -20,6 +20,8 @@ typedef struct lvgl_camera
     lv_obj_t *camera_imgbtn_home;
 }lvgl_camera_ui;
 
+void onQrCodeTask(void *pvParameters);
+
 extern lv_img_dsc_t photo_show;              //apply an lvgl image variable
 extern lvgl_camera_ui guider_camera_ui;      //camera ui structure
 

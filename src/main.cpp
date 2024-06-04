@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "camera_ui.h"
 #include "Freenove_WS2812_Lib_for_ESP32.h"
+#include <ESP32QRCodeReader.h>
 
 #include "firebase_config.h"
 #include <Firebase_ESP_Client.h>
@@ -21,6 +22,8 @@
 
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 Display screen;
+
+extern ESP32QRCodeReader reader;
 
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
@@ -87,6 +90,11 @@ void setup() {
     tab_function();
 
     //NVS.begin();
+
+    reader.setup();
+    Serial.println("Setup QRCode Reader");
+    //reader.beginOnCore(1);
+    //Serial.println("Begin on Core 1");
 
     strip.begin();
     strip.setBrightness(255);
