@@ -4,10 +4,28 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include "FT6336U.h"
-#include "sd_card.h"
-#include "camera.h"
-#include "camera_ui.h"
 #include "Freenove_WS2812_Lib_for_ESP32.h"
+
+#define CAMERA_MODEL_ESP32S3_EYE \
+  {                                 \
+    .PWDN_GPIO_NUM = -1,             \
+    .RESET_GPIO_NUM = -1,           \
+    .XCLK_GPIO_NUM = 15,            \
+    .SIOD_GPIO_NUM = 4,            \
+    .SIOC_GPIO_NUM = 5,            \
+    .Y9_GPIO_NUM = 16,              \
+    .Y8_GPIO_NUM = 17,              \
+    .Y7_GPIO_NUM = 18,              \
+    .Y6_GPIO_NUM = 12,              \
+    .Y5_GPIO_NUM = 10,               \
+    .Y4_GPIO_NUM = 8,              \
+    .Y3_GPIO_NUM = 9,              \
+    .Y2_GPIO_NUM = 11,              \
+    .VSYNC_GPIO_NUM = 6,           \
+    .HREF_GPIO_NUM = 7,            \
+    .PCLK_GPIO_NUM = 13,            \
+  }
+
 #include <ESP32QRCodeReader.h>
 
 #include "firebase_config.h"
@@ -23,7 +41,22 @@
 //-------------------------DECLARACIÓN DE FUNCIONES------------------------------------
 Display screen;
 
-extern ESP32QRCodeReader reader;
+ESP32QRCodeReader reader(CAMERA_MODEL_ESP32S3_EYE);
+//String qrCodeContent;
+String qrCodeContentGlobal;
+void onQrCodeTask(void *pvParameters);
+void decodeQRCode();
+void create_qr_task(void);
+void stop_qr_task(void);
+TaskHandle_t qrCodeTaskHandle;
+static int qr_task_flag = 0;
+
+bool book_found = false;
+String book_key;
+String title;
+String author;
+int totalPages;
+int currentPage;
 
 Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
@@ -76,12 +109,20 @@ static void draw_label_y_axis(lv_event_t * e);
 
 void tabview_event_handler(lv_event_t * e);
 
+
+void set_book_number();
+extern String get_book_number();
+void show_numeric_keyboard(lv_obj_t * label);
+extern int camera_button_press_count;
+void searchIsbnInDatabase(const String& qrCodeContent);
+void create_keyboard_screen(lv_obj_t *padre);
+static void go_to_screen_keyboard(lv_event_t * e);
+
+
+
 //-------------------------------SETUP------------------------------------
 void setup() {
     Serial.begin(115200);
-
-    sdcard_init();
-    camera_init();
 
     screen.init();
 
@@ -93,6 +134,9 @@ void setup() {
 
     reader.setup();
     Serial.println("Setup QRCode Reader");
+    reader.begin();
+    //reader.beginOnCore(0);
+    Serial.println("Begin ESP32QRCodeReader");
     //reader.beginOnCore(1);
     //Serial.println("Begin on Core 1");
 
@@ -103,21 +147,28 @@ void setup() {
 
 
 //-------------------------------LOOP------------------------------------
-String decoded_barcode;
-
 void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
     Firebase.ready();
 
-    if (Serial.available() > 0) {  // Si hay datos disponibles en el puerto serial
-        char buffer[32];  // Buffer para almacenar los datos recibidos
-        int bytesRead = Serial.readBytes(buffer, sizeof(buffer) - 1);  // Lee los bytes del puerto serie
-        buffer[bytesRead] = '\0';  // Asegúrate de que la cadena esté terminada en null
-        decoded_barcode = String(buffer);  // Convierte los bytes leídos en una cadena
-        Serial.println(decoded_barcode);  // Imprime la cadena leída en el Monitor Serial
-        Serial.println("Código leído desde Python");
-    }
+    /*
+    // Verifica si qrCodeContentGlobal ha cambiado
+    if (!qrCodeContentGlobal.isEmpty()) {
+        // Busca el ISBN en la base de datos
+        searchIsbnInDatabase(qrCodeContentGlobal);
+
+        // Si se encontró el libro, cambia a la pantalla del teclado
+        if (book_found) {
+            create_keyboard_screen(NULL);
+            // Elimina la tarea de escaneo de códigos QR
+            stop_qr_task();
+            book_found = false;
+        }
+
+        // Limpia qrCodeContentGlobal para la próxima iteración
+        qrCodeContentGlobal = "";
+    }*/
 }
 
 
@@ -353,6 +404,10 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style_t style, lv
 
 
 
+
+
+
+
 //--------------------------------------PESTAÑA 1---------------------------------------------------
 static void tab1_content(lv_obj_t * parent)
 {
@@ -430,6 +485,12 @@ void go_to_screen2_tab1(lv_event_t * e) {
 
 
 
+
+
+
+
+
+
 //--------------------------------------PESTAÑA 2---------------------------------------------------
 //Generación de estructura para hacer más fácil el manejo de los libros para ordenarlos
 struct Book {
@@ -463,18 +524,18 @@ static void tab2_content(lv_obj_t * parent) {
         std::vector<Book> books;
 
         for(JsonPair kv : doc.as<JsonObject>()) {
-                String key = kv.key().c_str();
-                String title = kv.value()["titulo"].as<String>();
-                long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
+            String key = kv.key().c_str();
+            String title = kv.value()["titulo"].as<String>();
+            long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
 
-                Book book = {title, key, timestamp};
-                books.push_back(book);
-            }
+            Book book = {title, key, timestamp};
+            books.push_back(book);
+        }
 
         // Ordenar los libros por timestamp en orden descendente
         std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
-                return a.timestamp > b.timestamp;
-            });
+            return a.timestamp > b.timestamp;
+        });
 
         // Mostrar los libros en la lista
         for (const Book& book : books) {
@@ -588,6 +649,11 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
 
 
 
+
+
+
+
+
 //--------------------------------------PESTAÑA 3---------------------------------------------------
 static void tab3_content(lv_obj_t * parent) {
     general_title(parent, "ESCANEAR LIBRO", TITLE_STYLE_ORANGE);
@@ -607,17 +673,38 @@ static void tab3_content(lv_obj_t * parent) {
     create_button(parent, symbol, BUTTON_STYLE_ORANGE, go_to_screen2_tab3, 75, 190);
 }
 
+
 // Función para crear la pantalla secundaria de la pestaña 3
 void create_second_screen_tab3(lv_obj_t *padre) {
-
     lv_obj_t * screen2 = lv_obj_create(NULL);
+    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
     lv_scr_load(screen2);
 
-    // Inicializa la interfaz de usuario de la cámara
-    setup_scr_camera(&guider_camera_ui);
-    // Carga la interfaz de usuario de la cámara en la pantalla
-    lv_scr_load(guider_camera_ui.camera);
+    lv_obj_t * label = lv_label_create(screen2);
+    lv_label_set_text(label, "Ahora debes escanear el QR");
+    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+
+    //xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, &qrCodeTaskHandle);
+
+    // Verifica si la tarea ya existe antes de intentar crearla
+    if (qrCodeTaskHandle == NULL) {
+        // Inicia la tarea de escaneo de códigos QR
+        Serial.println("Iniciando tarea de escaneo de QR");
+        create_qr_task();
+    } else {
+        Serial.println("La tarea de escaneo de QR ya estaba en ejecución");
+        stop_qr_task();
+        create_qr_task();
+    }
+
+    lv_obj_t * symbol = lv_label_create(screen2);
+    lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+    lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+    create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 200);
 }
+
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab3
 static void go_to_screen2_tab3(lv_event_t * e) {
@@ -625,6 +712,299 @@ static void go_to_screen2_tab3(lv_event_t * e) {
     scr_principal = main_screen;
     create_second_screen_tab3(main_screen);
 }
+
+
+//Create camera task thread
+void create_qr_task(void) {
+    if (qr_task_flag == 0) {
+        qr_task_flag = 1;
+        //disableCore0WDT(); // Desactiva el WDT del núcleo 0
+        xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, &qrCodeTaskHandle);
+    } else {
+        Serial.println("onQrCodeTask is running...");
+    }
+}
+
+
+//Close the camera thread
+void stop_qr_task(void) {
+    if (qr_task_flag == 1) {
+        qr_task_flag = 0;
+
+        while (1) {
+            if (eTaskGetState(qrCodeTaskHandle) == eDeleted) {
+                break;
+            }
+            //vTaskDelay(10);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
+        Serial.println("onQrCodeTask deleted!");
+    }
+}
+
+
+
+void onQrCodeTask(void *pvParameters) {
+    Serial.println("Iniciando escaneo de QR");
+
+    struct QRCodeData qrCodeData;
+
+    while (qr_task_flag) {
+        if (reader.receiveQrCode(&qrCodeData, 100)) {
+            Serial.println("Found QRCode");
+            if (qrCodeData.valid) {
+                Serial.print("Payload: ");
+                Serial.println((const char *)qrCodeData.payload);
+
+                // Guarda el contenido del código QR en la variable global
+                qrCodeContentGlobal = String((const char *)qrCodeData.payload);
+                Serial.println("Contenido decodificado " + qrCodeContentGlobal);
+
+                searchIsbnInDatabase(qrCodeContentGlobal);
+                create_keyboard_screen(NULL);
+
+            } else {
+                Serial.print("Invalid: ");
+                Serial.println((const char *)qrCodeData.payload);
+            }
+        }
+    }
+    vTaskDelete(qrCodeTaskHandle);
+}
+
+
+
+
+void create_keyboard_screen(lv_obj_t *padre) {
+    lv_obj_t * screen2 = lv_obj_create(NULL);
+    lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
+    lv_scr_load(screen2);
+
+    if(book_found) {
+        lv_obj_t * label1 = lv_label_create(screen2);
+        lv_label_set_text(label1, title.c_str());
+        lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+        lv_obj_align(label1, LV_ALIGN_TOP_MID, 0, 20);
+
+        lv_obj_t * label2 = lv_label_create(screen2);
+        lv_label_set_text(label2, author.c_str());
+        lv_obj_set_style_text_font(label2, &ubuntu_regular_16, 0);
+        lv_obj_align(label2, LV_ALIGN_TOP_MID, 0, 40);
+
+        lv_obj_t * label3 = lv_label_create(screen2);
+        lv_label_set_text(label3, (String(totalPages) + " páginas").c_str());
+        lv_obj_set_style_text_font(label3, &ubuntu_italic_16, 0);
+        lv_obj_align(label3, LV_ALIGN_TOP_MID, 0, 60);
+
+        lv_obj_t * label4 = lv_label_create(screen2);
+        lv_label_set_text(label4, ("Página anterior: " + String(currentPage)).c_str());
+        lv_obj_set_style_text_font(label4, &ubuntu_regular_16, 0);
+        lv_obj_align(label4, LV_ALIGN_TOP_MID, 0, 85);
+
+        lv_obj_t * label5 = lv_label_create(screen2);
+        lv_obj_align(label5, LV_ALIGN_TOP_MID, 0, 110);
+        lv_label_set_text(label5, "¿En qué página te encuentras?");
+        lv_obj_set_style_text_font(label5, &ubuntu_regular_16, 0);
+
+        show_numeric_keyboard(label5);
+    } else {
+        lv_obj_t * label = lv_label_create(screen2);
+        lv_label_set_text(label, "         LIBRO\n           NO\nENCONTRADO");
+        lv_obj_set_style_text_font(label, &bigger_symbols, 0);
+        lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 40);
+
+        //Crear boton para regresar a la pantalla principal con estilo
+        lv_obj_t * symbol = lv_label_create(screen2);
+        lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+        lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+        create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
+    }
+}
+
+
+static void go_to_screen_keyboard(lv_event_t * e) {
+    lv_obj_t * main_screen = lv_scr_act(); // Obtén la pantalla principal (donde están las tabs)
+    searchIsbnInDatabase(qrCodeContentGlobal);
+    create_keyboard_screen(main_screen);
+}
+
+
+int camera_button_press_count = 0;
+String isbn_aux;
+void set_book_number() {
+    camera_button_press_count++;
+    if (camera_button_press_count == 1) {
+        isbn_aux = "9788416588436";
+    }
+    else if (camera_button_press_count == 2) {
+        isbn_aux = "9788416588435"; //Invisible
+    } else if (camera_button_press_count == 3) {
+        isbn_aux = "9788467539677"; //El valle de los lobos
+    } else if (camera_button_press_count == 4) {
+        isbn_aux = "9788467539677"; //El valle de los lobos
+    } else if (camera_button_press_count == 5) {
+        isbn_aux = "9788467539677"; //El valle de los lobos
+    } else if (camera_button_press_count == 6) {
+        isbn_aux = "9788416588435"; //Invisible
+    } else if (camera_button_press_count == 7) {
+        isbn_aux = "9788467539707"; //Fenris, el elfo
+    } else {
+        isbn_aux = "0000000000000";
+    }
+}
+
+// Función para obtener el ISBN del libro actual
+String get_book_number() {
+    return isbn_aux;
+}
+
+
+void searchIsbnInDatabase(const String& qrCodeContentGlobal) {
+    // Obtén el ISBN aleatorio
+    String qrIsbn = qrCodeContentGlobal;
+    //String qrIsbn = get_book_number();
+
+    // Inicializa book_found a false
+    book_found = false;
+
+    // Llama a la función get_book_data() en firebase_config.cpp
+    DynamicJsonDocument doc = get_book_data("");
+
+    // Recorre todos los libros en la base de datos
+    for(JsonPair kv : doc.as<JsonObject>()) {
+        // Compara el ISBN de cada libro con el ISBN aleatorio
+        String isbn = kv.value()["isbn"].as<String>();
+        if (isbn == qrIsbn) {
+            book_found = true;
+
+            // Almacena la clave del libro
+            book_key = kv.key().c_str();
+
+            // Si encuentras un libro con el mismo ISBN, guarda los datos
+            title = kv.value()["titulo"].as<String>();
+            author = kv.value()["autor"].as<String>();
+            totalPages = kv.value()["paginas_total"].as<int>();
+            currentPage = kv.value()["pagina_actual"].as<int>();
+
+            // Aquí puedes hacer lo que necesites con los datos del libro
+            // Por ejemplo, podrías imprimirlos en la consola
+            Serial.println("Libro encontrado:");
+            Serial.println("Titulo: " + title);
+            Serial.println("Autor: " + author);
+            Serial.println("Paginas totales: " + String(totalPages));
+            Serial.println("Pagina actual: " + String(currentPage));
+            break;
+        }
+    }
+
+    // Si no se encontró el libro, imprime "Libro no encontrado"
+    if (!book_found) {
+        Serial.println("Libro no encontrado");
+    }
+
+}
+
+
+// Declaración de la función de devolución de llamada
+static void keyboard_event_cb(lv_event_t * e);
+
+// Implementación de la función
+void show_numeric_keyboard(lv_obj_t * label) {
+    // Crear un objeto textarea para almacenar el número introducido por el usuario
+    lv_obj_t * ta = lv_textarea_create(lv_scr_act());
+
+    static lv_style_t style_ta;
+    lv_style_init(&style_ta);
+    lv_style_set_bg_color(&style_ta, lv_color_hex(0xFFF0BE)); // Cambia el color de fondo a tu gusto
+    lv_obj_add_style(ta, &style_ta, 0);
+    lv_obj_set_size(ta, 100, 40); // Ajusta el tamaño según tus necesidades
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 140); // Ajusta la posición según tus necesidades
+
+    // Establecer el texto inicial del textarea a una cadena vacía
+    lv_textarea_set_text(ta, "");
+
+    static const char * kb_map[] = {"1", "2", "3", LV_SYMBOL_OK, "\n",
+                                    "4", "5", "6", LV_SYMBOL_NEW_LINE, "\n",
+                                    "7", "8", "9", LV_SYMBOL_BACKSPACE, "\n",
+                                    "0", LV_SYMBOL_LEFT, LV_SYMBOL_RIGHT, NULL
+    };
+
+    /*Set the relative width of the buttons and other controls*/
+    static const lv_btnmatrix_ctrl_t kb_ctrl[] = {1, 1, 1, 2,
+                                                  1, 1, 1, 2,
+                                                  1, 1, 1, 2,
+                                                  3, 1, 1
+    };
+
+    /*Create a keyboard and add the new map as USER_1 mode*/
+    lv_obj_t * kb = lv_keyboard_create(lv_scr_act());
+    lv_obj_set_size(kb, 240, 130);
+
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_USER_1, kb_map, kb_ctrl);
+    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_USER_1);
+    lv_keyboard_set_textarea(kb, ta);
+
+    static lv_style_t style_kb;
+    lv_style_init(&style_kb);
+    lv_style_set_bg_color(&style_kb, lv_color_hex(0xFFF0BE)); // Cambia el color de fondo a tu gusto
+    lv_obj_add_style(kb, &style_kb, 0); // Aplica el estilo al teclado
+
+    // Registrar la función de devolución de llamada para el evento LV_EVENT_READY
+    lv_obj_add_event_cb(kb, keyboard_event_cb, LV_EVENT_READY, label);
+}
+
+// Función de devolución de llamada para el evento LV_EVENT_READY del teclado
+static void keyboard_event_cb(lv_event_t * e) {
+    lv_obj_t * kb = lv_event_get_target(e);
+    lv_obj_t * ta = lv_keyboard_get_textarea(kb);
+    lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
+
+    if(lv_event_get_code(e) == LV_EVENT_READY) {
+        int number = atoi(lv_textarea_get_text(ta));
+
+        //searchIsbnInDatabase();
+
+        // Convierte el número de páginas a un entero
+        int max_value = totalPages;
+
+        if(number > max_value) {
+            char max_value_str[32];
+            sprintf(max_value_str, "%d", max_value);
+            lv_textarea_set_text(ta, max_value_str);
+            return;
+        }
+
+        // Actualizar la variable de página correspondiente al libro actual
+        currentPage = number;
+
+        // Actualizar el valor de currentPage en la base de datos
+        //Firebase.RTDB.setInt(&fbdo, "/libros/" + book_key + "/pagina_actual", currentPage);
+        update_current_page(book_key.c_str(), currentPage);
+
+        char buffer[32];
+        sprintf(buffer, "Página actual: %d", number);
+        lv_label_set_text(label, buffer);
+
+        lv_obj_del(kb);
+        lv_obj_del(ta);
+
+        //Crear boton para regresar a la pantalla principal con estilo
+        lv_obj_t * symbol = lv_label_create(lv_scr_act());
+        lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+        lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+        create_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
+    }
+}
+
+
+
+
+
+
+
 
 
 

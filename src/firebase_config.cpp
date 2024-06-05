@@ -16,11 +16,11 @@
 #define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"
 #define USER_EMAIL "amm00384@red.ujaen.es"
 #define USER_PASSWORD "frbs_4"
-#define WIFI_SSID "vodafoneAAP8ZC"
-#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
+//#define WIFI_SSID "vodafoneAAP8ZC"
+//#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
 
-//#define WIFI_SSID "Xiaomi_Ainhoa"
-//#define WIFI_PASSWORD "cobw4192"
+#define WIFI_SSID "Xiaomi_Ainhoa"
+#define WIFI_PASSWORD "cobw4192"
 
 //#define WIFI_SSID "telema2"
 //#define WIFI_PASSWORD "teleco2015"
