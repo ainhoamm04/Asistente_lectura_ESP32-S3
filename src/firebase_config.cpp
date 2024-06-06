@@ -92,8 +92,8 @@ DynamicJsonDocument get_book_data(const std::string& key) {
             json->toString(jsonString);
 
             // Print the JSON string to verify it's loading correctly
-            Serial.println("JSON string loaded from Firebase:");
-            Serial.println(jsonString);
+            //Serial.println("JSON string loaded from Firebase:");
+            //Serial.println(jsonString);
 
             DynamicJsonDocument doc(1024);
             deserializeJson(doc, jsonString);

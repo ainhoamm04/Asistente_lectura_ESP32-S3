@@ -118,7 +118,9 @@ void searchIsbnInDatabase(const String& qrCodeContent);
 void create_keyboard_screen(lv_obj_t *padre);
 static void go_to_screen_keyboard(lv_event_t * e);
 
-
+// Variable global que actúa como un semáforo
+bool qrCodeFound = false;
+void checkQrCodeFoundTask(void *pvParameters);
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -140,6 +142,8 @@ void setup() {
     //reader.beginOnCore(1);
     //Serial.println("Begin on Core 1");
 
+    //xTaskCreate(checkQrCodeFoundTask, "checkQrCodeFoundTask", 2048, NULL, 1, NULL);
+
     strip.begin();
     strip.setBrightness(255);
 }
@@ -151,24 +155,15 @@ void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
     Firebase.ready();
-
-    /*
-    // Verifica si qrCodeContentGlobal ha cambiado
-    if (!qrCodeContentGlobal.isEmpty()) {
-        // Busca el ISBN en la base de datos
+    if (qrCodeFound)
+    {
+        Serial.println("Hemos encontrado el QR y estamos en el loop");
+        qrCodeFound = false;
+        Serial.println(qrCodeContentGlobal);
+        //lv_scr_load(scr_principal);
         searchIsbnInDatabase(qrCodeContentGlobal);
-
-        // Si se encontró el libro, cambia a la pantalla del teclado
-        if (book_found) {
-            create_keyboard_screen(NULL);
-            // Elimina la tarea de escaneo de códigos QR
-            stop_qr_task();
-            book_found = false;
-        }
-
-        // Limpia qrCodeContentGlobal para la próxima iteración
-        qrCodeContentGlobal = "";
-    }*/
+        create_keyboard_screen(lv_scr_act());
+    }
 }
 
 
@@ -693,7 +688,7 @@ void create_second_screen_tab3(lv_obj_t *padre) {
         Serial.println("Iniciando tarea de escaneo de QR");
         create_qr_task();
     } else {
-        Serial.println("La tarea de escaneo de QR ya estaba en ejecución");
+        Serial.println("La tarea de escaneo de QR ya estaba en ejecucion");
         stop_qr_task();
         create_qr_task();
     }
@@ -749,6 +744,9 @@ void onQrCodeTask(void *pvParameters) {
 
     struct QRCodeData qrCodeData;
 
+    qrCodeFound = false;
+    qrCodeContentGlobal = "";
+
     while (qr_task_flag) {
         if (reader.receiveQrCode(&qrCodeData, 100)) {
             Serial.println("Found QRCode");
@@ -760,9 +758,12 @@ void onQrCodeTask(void *pvParameters) {
                 qrCodeContentGlobal = String((const char *)qrCodeData.payload);
                 Serial.println("Contenido decodificado " + qrCodeContentGlobal);
 
-                searchIsbnInDatabase(qrCodeContentGlobal);
-                create_keyboard_screen(NULL);
+                //searchIsbnInDatabase(qrCodeContentGlobal);
+                //create_keyboard_screen(NULL);
 
+                qrCodeFound = true;  // Activa el semáforo
+                //stop_qr_task();
+                qr_task_flag = 1; // Añade esta línea para detener la tarea
             } else {
                 Serial.print("Invalid: ");
                 Serial.println((const char *)qrCodeData.payload);
@@ -772,6 +773,26 @@ void onQrCodeTask(void *pvParameters) {
     vTaskDelete(qrCodeTaskHandle);
 }
 
+
+
+/*
+// Tarea que verifica constantemente si se ha encontrado un código QR válido
+void checkQrCodeFoundTask(void *pvParameters) {
+    while (1) {
+        if (qrCodeFound) {
+            qrCodeFound = false;  // Reinicia el semáforo
+
+            // Llama a searchIsbnInDatabase con el contenido del código QR
+            searchIsbnInDatabase(qrCodeContentGlobal);
+
+            // Llama a la función para crear la pantalla del teclado
+            create_keyboard_screen(lv_scr_act());
+        }
+
+        // Espera 1 segundo antes de verificar de nuevo
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}*/
 
 
 
