@@ -135,11 +135,12 @@ void setup() {
 
     //NVS.begin();
 
+    /*
     reader.setup();
     Serial.println("Setup QRCode Reader");
-    reader.begin();
+    reader.begin();*/
     //reader.beginOnCore(0);
-    Serial.println("Begin ESP32QRCodeReader");
+    //Serial.println("Begin ESP32QRCodeReader");
     //reader.beginOnCore(1);
     //Serial.println("Begin on Core 1");
 
@@ -245,7 +246,13 @@ void back_to_main_menu(lv_event_t * e) {
     lv_scr_load(scr_principal); // Obtener la pantalla principal (donde están las tabs)
     lv_obj_del(current_screen); // Eliminar la pantalla secundaria
 
-    isSecondScreenTab3Active = true;
+    isSecondScreenTab3Active = false;
+    reader.end();
+    Serial.println("End ESP32QRCodeReader");
+    // Detiene la tarea de escaneo de códigos QR
+    if (qrCodeTaskHandle != NULL) {
+        stop_qr_task();
+    }
 }
 
 
@@ -680,6 +687,11 @@ void create_second_screen_tab3(lv_obj_t *padre) {
     lv_scr_load(screen2);
 
     isSecondScreenTab3Active = true;
+    reader.setup();
+    Serial.println("Setup QRCode Reader");
+    reader.begin();
+    Serial.println("Begin ESP32QRCodeReader");
+
 
     lv_obj_t * label = lv_label_create(screen2);
     lv_label_set_text(label, "Ahora debes escanear el QR");
