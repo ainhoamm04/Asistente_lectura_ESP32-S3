@@ -50,6 +50,7 @@ void create_qr_task(void);
 void stop_qr_task(void);
 TaskHandle_t qrCodeTaskHandle;
 static int qr_task_flag = 0;
+bool isSecondScreenTab3Active = false;
 
 bool book_found = false;
 String book_key;
@@ -243,6 +244,8 @@ void back_to_main_menu(lv_event_t * e) {
     lv_obj_t * current_screen = lv_obj_get_parent(lv_event_get_target(e)); // Obtener la pantalla actual (secundaria)
     lv_scr_load(scr_principal); // Obtener la pantalla principal (donde están las tabs)
     lv_obj_del(current_screen); // Eliminar la pantalla secundaria
+
+    isSecondScreenTab3Active = true;
 }
 
 
@@ -676,6 +679,8 @@ void create_second_screen_tab3(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
     lv_scr_load(screen2);
 
+    isSecondScreenTab3Active = true;
+
     lv_obj_t * label = lv_label_create(screen2);
     lv_label_set_text(label, "Ahora debes escanear el QR");
     lv_obj_set_style_text_font(label, &bigger_symbols, 0);
@@ -747,7 +752,7 @@ void onQrCodeTask(void *pvParameters) {
     qrCodeFound = false;
     qrCodeContentGlobal = "";
 
-    while (qr_task_flag) {
+    while (qr_task_flag && isSecondScreenTab3Active) {
         if (reader.receiveQrCode(&qrCodeData, 100)) {
             Serial.println("Found QRCode");
             if (qrCodeData.valid) {
