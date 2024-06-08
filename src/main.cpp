@@ -5,6 +5,7 @@
 #include <TFT_eSPI.h>
 #include "FT6336U.h"
 #include "Freenove_WS2812_Lib_for_ESP32.h"
+#include "lv_img.h"
 
 #define CAMERA_MODEL_ESP32S3_EYE \
   {                                 \
@@ -441,7 +442,7 @@ void create_second_screen_tab1(lv_obj_t *padre) {
             "\xF3\xB1\x89\x9F",
             "Aquí podrás almacenar los libros que estés leyendo",
             "\xF3\xB0\x81\xB2",
-            "Aquí podrás registrar tus nuevos libros. Para ello deberás mostrar a la cámara el código de barras del libro",
+            "Aquí podrás registrar tus nuevos libros. Para ello deberás mostrar a la cámara el QR asignado a cada libro",
             "\xF3\xB0\x84\xA8",
             "Aquí podrás comprobar tu avance con la lectura"
     };
@@ -544,7 +545,7 @@ static void tab2_content(lv_obj_t * parent) {
             strcpy(keyCopy, book.key.c_str());
             lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy);
 
-            lv_obj_t * label = lv_obj_get_child(btn, NULL);
+            lv_obj_t * label = lv_obj_get_child(btn, 0);
             lv_obj_set_style_text_font(label, &bigger_symbols, 0);
 
             lv_obj_set_style_text_font(btn, &ubuntu_regular_16, 0);
@@ -659,7 +660,7 @@ static void tab3_content(lv_obj_t * parent) {
 
     lv_obj_t * label = lv_label_create(parent);
     lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(label, "¿Deseas agregar un nuevo libro a tu biblioteca?\n\nPincha en el botón para abrir la cámara y escanear el ISBN");
+    lv_label_set_text(label, "¿Deseas agregar un nuevo libro a tu biblioteca?\n\nPincha en el botón para abrir la cámara y escanear el libro");
     lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
     lv_obj_set_width(label, 200);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
@@ -677,17 +678,11 @@ static void tab3_content(lv_obj_t * parent) {
 void create_second_screen_tab3(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
     lv_scr_load(screen2);
 
     reader.begin();
     Serial.println("Begin ESP32QRCodeReader");
-
-    lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "Ahora debes escanear el QR");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-    //xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, &qrCodeTaskHandle);
 
     // Verifica si la tarea ya existe antes de intentar crearla
     if (qrCodeTaskHandle == NULL) {
@@ -700,11 +695,37 @@ void create_second_screen_tab3(lv_obj_t *padre) {
         create_qr_task();
     }
 
+    // EF 90 85 --> libro
+    // EE AB 9A --> camara
+
+    lv_obj_t * label1 = lv_label_create(screen2);
+    lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
+    lv_label_set_recolor(label1, true);
+    lv_label_set_text(label1, "#FF7C00 Muestra el QR del libro a la #FF7C00 cámara#");
+    lv_obj_set_style_text_font(label1, &ubuntu_bold_16, 0);
+    lv_obj_set_width(label1, 230);
+    lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -95);
+
+    lv_obj_t * label2 = lv_label_create(screen2);
+    lv_label_set_recolor(label2, true);
+    lv_label_set_text(label2, (String("#FF7C00  \xEE\xAB\x9A                     #" "#FF7C00          \xEE\xAA\xA4#")).c_str());
+    lv_obj_set_style_text_font(label2, &bigger_symbols, 0);
+    lv_obj_set_pos(label2, 0, 0);
+
+    lv_obj_t * label3 = lv_label_create(screen2);
+    lv_label_set_recolor(label3, true);
+    lv_label_set_text(label3, (String("#FF7C00  \xEE\xAA\xA4                      #" "#FF7C00         \xEE\xAB\x9A#")).c_str());
+    lv_obj_set_style_text_font(label3, &bigger_symbols, 0);
+    lv_obj_set_pos(label3, 0, 290);
+
+    show_image();
+
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 200);
+    create_button(screen2, symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 340);
 }
 
 
