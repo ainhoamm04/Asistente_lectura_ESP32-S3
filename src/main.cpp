@@ -121,7 +121,6 @@ static void go_to_screen_keyboard(lv_event_t * e);
 
 // Variable global que actúa como un semáforo
 bool qrCodeFound = false;
-void checkQrCodeFoundTask(void *pvParameters);
 
 //-------------------------------SETUP------------------------------------
 void setup() {
@@ -135,11 +134,9 @@ void setup() {
 
     //NVS.begin();
 
-    /*
     reader.setup();
     Serial.println("Setup QRCode Reader");
-    reader.begin();*/
-    //reader.beginOnCore(0);
+    //reader.begin();
     //Serial.println("Begin ESP32QRCodeReader");
     //reader.beginOnCore(1);
     //Serial.println("Begin on Core 1");
@@ -157,8 +154,7 @@ void loop() {
     screen.routine(); /* let the GUI do its work */
     delay(5);
     Firebase.ready();
-    if (qrCodeFound)
-    {
+    if (qrCodeFound) {
         Serial.println("Hemos encontrado el QR y estamos en el loop");
         qrCodeFound = false;
         Serial.println(qrCodeContentGlobal);
@@ -247,12 +243,10 @@ void back_to_main_menu(lv_event_t * e) {
     lv_obj_del(current_screen); // Eliminar la pantalla secundaria
 
     isSecondScreenTab3Active = false;
-    reader.end();
-    Serial.println("End ESP32QRCodeReader");
-    // Detiene la tarea de escaneo de códigos QR
-    if (qrCodeTaskHandle != NULL) {
-        stop_qr_task();
-    }
+    //qrCodeContentGlobal = ""; // Restablecer qrCodeContentGlobal
+    //qrCodeFound = false;
+    //reader.end();
+    //Serial.println("End ESP32QRCodeReader");
 }
 
 
@@ -686,12 +680,8 @@ void create_second_screen_tab3(lv_obj_t *padre) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
     lv_scr_load(screen2);
 
-    isSecondScreenTab3Active = true;
-    reader.setup();
-    Serial.println("Setup QRCode Reader");
     reader.begin();
     Serial.println("Begin ESP32QRCodeReader");
-
 
     lv_obj_t * label = lv_label_create(screen2);
     lv_label_set_text(label, "Ahora debes escanear el QR");
@@ -761,10 +751,10 @@ void onQrCodeTask(void *pvParameters) {
 
     struct QRCodeData qrCodeData;
 
-    qrCodeFound = false;
+    //qrCodeFound = false;
     qrCodeContentGlobal = "";
 
-    while (qr_task_flag && isSecondScreenTab3Active) {
+    while (qr_task_flag) {
         if (reader.receiveQrCode(&qrCodeData, 100)) {
             Serial.println("Found QRCode");
             if (qrCodeData.valid) {
@@ -774,9 +764,6 @@ void onQrCodeTask(void *pvParameters) {
                 // Guarda el contenido del código QR en la variable global
                 qrCodeContentGlobal = String((const char *)qrCodeData.payload);
                 Serial.println("Contenido decodificado " + qrCodeContentGlobal);
-
-                //searchIsbnInDatabase(qrCodeContentGlobal);
-                //create_keyboard_screen(NULL);
 
                 qrCodeFound = true;  // Activa el semáforo
                 //stop_qr_task();
@@ -789,27 +776,6 @@ void onQrCodeTask(void *pvParameters) {
     }
     vTaskDelete(qrCodeTaskHandle);
 }
-
-
-
-/*
-// Tarea que verifica constantemente si se ha encontrado un código QR válido
-void checkQrCodeFoundTask(void *pvParameters) {
-    while (1) {
-        if (qrCodeFound) {
-            qrCodeFound = false;  // Reinicia el semáforo
-
-            // Llama a searchIsbnInDatabase con el contenido del código QR
-            searchIsbnInDatabase(qrCodeContentGlobal);
-
-            // Llama a la función para crear la pantalla del teclado
-            create_keyboard_screen(lv_scr_act());
-        }
-
-        // Espera 1 segundo antes de verificar de nuevo
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-}*/
 
 
 
