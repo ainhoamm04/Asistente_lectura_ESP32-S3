@@ -677,17 +677,11 @@ static void tab3_content(lv_obj_t * parent) {
 void create_second_screen_tab3(lv_obj_t *padre) {
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
-    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xCBECFF), 0);
+    lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
     lv_scr_load(screen2);
 
     reader.begin();
     Serial.println("Begin ESP32QRCodeReader");
-
-    lv_obj_t * label = lv_label_create(screen2);
-    lv_label_set_text(label, "Ahora debes escanear el QR");
-    lv_obj_set_style_text_font(label, &bigger_symbols, 0);
-
-    //xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, &qrCodeTaskHandle);
 
     // Verifica si la tarea ya existe antes de intentar crearla
     if (qrCodeTaskHandle == NULL) {
@@ -699,6 +693,17 @@ void create_second_screen_tab3(lv_obj_t *padre) {
         stop_qr_task();
         create_qr_task();
     }
+
+    //	F3 B0 90 B3 --> QR
+    //	EE AB 9A --> camara
+    // 	EF 90 85 --> libro
+
+    /*
+    lv_obj_t * label = lv_label_create(screen2);
+    lv_label_set_text(label, (String("\xEE\xAB\x9A") + String("\xF3\xB0\x90\xB3") + String("\xEF\x90\x85")).c_str());
+    lv_obj_set_style_text_font(label, &ubuntu_regular_16, 0);
+    */
+
 
     lv_obj_t * symbol = lv_label_create(screen2);
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
@@ -737,7 +742,6 @@ void stop_qr_task(void) {
             if (eTaskGetState(qrCodeTaskHandle) == eDeleted) {
                 break;
             }
-            //vTaskDelay(10);
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         Serial.println("onQrCodeTask deleted!");
@@ -751,7 +755,6 @@ void onQrCodeTask(void *pvParameters) {
 
     struct QRCodeData qrCodeData;
 
-    //qrCodeFound = false;
     qrCodeContentGlobal = "";
 
     while (qr_task_flag) {
@@ -766,7 +769,6 @@ void onQrCodeTask(void *pvParameters) {
                 Serial.println("Contenido decodificado " + qrCodeContentGlobal);
 
                 qrCodeFound = true;  // Activa el semáforo
-                //stop_qr_task();
                 qr_task_flag = 1; // Añade esta línea para detener la tarea
             } else {
                 Serial.print("Invalid: ");
