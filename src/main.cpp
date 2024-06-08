@@ -127,10 +127,10 @@ void setup() {
     Serial.begin(115200);
 
     screen.init();
-    tab_function();
+
     setup_firebase();
 
-
+    tab_function();
 
     //NVS.begin();
 
