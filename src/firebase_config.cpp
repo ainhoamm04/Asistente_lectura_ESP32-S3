@@ -34,13 +34,13 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 // Definición de otras variables relacionadas con Firebase
-unsigned long sendDataPrevMillis = 0;
 unsigned long count = 0;
 bool signupOK = false;
 String path = "/libros";
 
 // Definición de la función para configurar Firebase
 void setup_firebase() {
+    // Inicializar la conexión Wi-Fi
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print("Connecting to Wi-Fi");
     while (WiFi.status() != WL_CONNECTED){
@@ -53,16 +53,18 @@ void setup_firebase() {
 
     Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
 
-    //Assign the api key (required)
+    // Asignar la clave de la API (requerido)
     config.api_key = API_KEY;
-    //Assign the user sign in credentials
+
+    // Asignar las credenciales de inicio de sesión del usuario
     auth.user.email = USER_EMAIL;
     auth.user.password = USER_PASSWORD;
-    //Assign the RTDB URL (required)
+
+    // Asignar la URL de la base de datos RTDB (requerido)
     config.database_url = DATABASE_URL;
 
-    //Sign up
-    if (Firebase.signUp(&config, &auth, "", "")){
+    // Registrarse
+    if (Firebase.signUp(&config, &auth, USER_EMAIL, USER_PASSWORD)){
         Serial.println("SIGN UP CORRECT");
         signupOK = true;
     }
@@ -78,44 +80,46 @@ void setup_firebase() {
 }
 
 
-
+// Función para obtener los datos de un libro
 DynamicJsonDocument get_book_data(const std::string& key) {
+    // Obtener el path
     String path = "/libros";
     if (!key.empty()) {
         path += "/" + String(key.c_str());
     }
 
+    // Obtener los datos del libro
     if (Firebase.RTDB.get(&fbdo, path.c_str())) {
         if (fbdo.dataType() == "json") {
-            FirebaseJson *json = fbdo.jsonObjectPtr();
-            String jsonString;
-            json->toString(jsonString);
+            FirebaseJson *json = fbdo.jsonObjectPtr(); // Obtener el puntero al objeto JSON
+            String jsonString; // Crear un string para almacenar el JSON
+            json->toString(jsonString); // Convertir el JSON a string
 
-            // Print the JSON string to verify it's loading correctly
             //Serial.println("JSON string loaded from Firebase:");
             //Serial.println(jsonString);
 
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, jsonString);
+            DynamicJsonDocument doc(1024); // Crear un documento JSON para almacenar los datos
+            deserializeJson(doc, jsonString); // Deserializar el JSON en el documento para poder acceder a los datos
 
-            size_t requiredSize = measureJson(doc);
+            size_t requiredSize = measureJson(doc); // Calcular el tamaño requerido para el JSON
             Serial.print("Tamaño requerido para el JSON: ");
             Serial.println(requiredSize);
 
             return doc;
         }
     }
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(1024); // Crear un documento JSON vacío para que la función siga ejecutandose en caso de error
     return doc;
 }
 
 
+// Función para actualizar la página actual de un libro
 void update_current_page(const std::string& key, int page) {
     // Actualizar la página actual
     String path = "/libros/" + String(key.c_str()) + "/pagina_actual";
     Firebase.RTDB.setInt(&fbdo, path.c_str(), page);
 
-    // Actualizar la última modificación
+    // Actualizar la última modificación (timestamp
     path = "/libros/" + String(key.c_str()) + "/ultima_modificacion";
     Firebase.RTDB.setTimestamp(&fbdo, path.c_str());
 }

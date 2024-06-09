@@ -192,17 +192,16 @@ void lv_img_init(void) {
   header.w = 180;
   header.h = 180;
   header.cf = LV_IMG_CF_TRUE_COLOR;
-
   img.header = header;
   img.data_size = 32400 * LV_COLOR_SIZE / 8;
   img.data = img_map;
 };
 
 
-void show_image(void){
+void show_image(lv_obj_t * parent){
     lv_img_init();
-    lv_obj_t * img1 = lv_img_create(lv_scr_act());//Apply for an img variable
-    lv_img_set_src(img1, &img);     //Add image information to img
-    lv_obj_align(img1, LV_ALIGN_CENTER, 0, 40);  //It is displayed 20 pixels above the middle of the screen
-    lv_obj_set_size(img1, 180, 180);              //Set the size of the image
+    lv_obj_t * img1 = lv_img_create(parent);
+    lv_img_set_src(img1, &img);
+    lv_obj_align(img1, LV_ALIGN_CENTER, 0, 40);
+    lv_obj_set_size(img1, 180, 180);
 }

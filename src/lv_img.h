@@ -4,7 +4,7 @@
 extern lv_img_dsc_t img;
 
 void lv_img_init(void);
-void show_image(void);
+void show_image(lv_obj_t * parent);
 
 #endif
 
