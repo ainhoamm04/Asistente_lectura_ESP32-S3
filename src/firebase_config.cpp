@@ -1,7 +1,3 @@
-//
-// Created by ainho on 26/05/2024.
-//
-
 #include "firebase_config.h"
 #include <WiFi.h>
 #include <ArduinoJson.h>
@@ -81,7 +77,7 @@ void setup_firebase() {
 
 
 // Función para obtener los datos de un libro
-DynamicJsonDocument get_book_data(const std::string& key) {
+DynamicJsonDocument get_book_data(const std::string & key) {
     // Obtener el path
     String path = "/libros";
     if (!key.empty()) {
@@ -114,7 +110,7 @@ DynamicJsonDocument get_book_data(const std::string& key) {
 
 
 // Función para actualizar la página actual de un libro
-void update_current_page(const std::string& key, int page) {
+void update_current_page(const std::string & key, int page) {
     // Actualizar la página actual
     String path = "/libros/" + String(key.c_str()) + "/pagina_actual";
     Firebase.RTDB.setInt(&fbdo, path.c_str(), page);

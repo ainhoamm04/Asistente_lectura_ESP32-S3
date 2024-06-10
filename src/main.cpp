@@ -6,6 +6,7 @@
 #include "firebase_config.h"
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
+#include <vector>
 
 // El fabricante me indica que este es el modelo de cámara del kit
 #define CAMERA_MODEL_ESP32S3_EYE \
@@ -522,7 +523,7 @@ void tab2_content(lv_obj_t * parent) {
         lv_obj_set_size(list, 230, list_height);
         lv_obj_align(list, LV_ALIGN_TOP_MID, 0, 55);
 
-        // Vector para almacenar los libros
+        // Vector para almacenar los libros (vector dinámico)
         std::vector<Book> books;
 
         // Recorrer los datos obtenidos y crear un objeto Book para cada libro
@@ -572,11 +573,11 @@ void go_to_screen2_tab2(lv_event_t * e) {
     scr_principal = main_screen;
 
     // Obtener la clave del libro desde el evento
-    /* Recupera los datos de usuario asociados a un evento y los convierte a una cadena de caracteres
-       Primero, se realiza un casting estático para convertir el puntero a void devuelto por lv_event_get_user_data(e) a un puntero a char
-       Luego, se utiliza el constructor de std::string para convertir el puntero a char en una cadena de caracteres de C++
-       El resultado se almacena en la variable 'key'*/
-    std::string key = std::string(static_cast<char*>(lv_event_get_user_data(e)));
+    /* Se obtiene el dato de usuario asociado al evento 'e' mediante la función 'lv_event_get_user_data(e)'
+       Esta función devuelve un puntero a 'void', por lo que se utiliza 'static_cast<char*>' para convertirlo a un puntero a 'char'
+       Finalmente, se utiliza el constructor de 'std::string' para convertir el puntero a 'char' en una cadena de caracteres
+       El resultado se almacena en la variable 'key' */
+    std::string key = static_cast<char*>(lv_event_get_user_data(e));
 
     // Llamar a la función para crear la segunda pantalla pasando la key del libro seleccionado de la lista
     create_second_screen_tab2(main_screen, key);
@@ -593,7 +594,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string & key) {
 
     // Decoración con símbolos arriba y abajo de la pantalla
     lv_obj_t * label_symbols1 = lv_label_create(screen2);
-    std::string symbols = "";
+    String symbols = "";
     for(int i = 0; i < 9; i++) {
         symbols += " \xEE\xB7\xA2  ";
     }
