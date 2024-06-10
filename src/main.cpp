@@ -7,7 +7,7 @@
 #include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 
-// El fabricante me indica que este es el modelo del kit
+// El fabricante me indica que este es el modelo de cámara del kit
 #define CAMERA_MODEL_ESP32S3_EYE \
   {                                 \
     .PWDN_GPIO_NUM = -1,             \
@@ -44,8 +44,8 @@ String qrCodeContentGlobal;
 TaskHandle_t qrCodeTaskHandle;
 static int qr_task_flag = 0;
 void onQrCodeTask(void *pvParameters);
-void create_qr_task(void);
-void stop_qr_task(void);
+void create_qr_task();
+void stop_qr_task();
 bool qrCodeFound = false;
 
 bool book_found = false;
@@ -54,12 +54,13 @@ String title;
 String author;
 int totalPages;
 int currentPage;
+long long timestamp;
 
-Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
+//Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
-lv_obj_t *scr_principal;
+lv_obj_t * scr_principal;
 
-void tab_function(void);
+void tab_function();
 void back_to_main_menu(lv_event_t * e);
 void tabview_event_handler(lv_event_t * e);
 
@@ -68,7 +69,7 @@ void create_second_screen_tab1(lv_obj_t * parent);
 void go_to_screen2_tab1(lv_event_t * e);
 
 void tab2_content(lv_obj_t * parent);
-void create_second_screen_tab2(lv_obj_t * parent, const std::string& key);
+void create_second_screen_tab2(lv_obj_t * parent, const std::string & key);
 void go_to_screen2_tab2(lv_event_t * e);
 
 void tab3_content(lv_obj_t * parent);
@@ -128,8 +129,8 @@ void setup() {
     Serial.println("Setup QRCode Reader");
 
     // Inicialización del LED
-    strip.begin();
-    strip.setBrightness(255);
+    //strip.begin();
+    //strip.setBrightness(255);
 }
 
 
@@ -157,7 +158,7 @@ lv_obj_t * tab2;
 lv_obj_t * tab3;
 lv_obj_t * tab4;
 
-void tab_function(void)
+void tab_function()
 {
     // Crear un objeto de vista de pestañas
     lv_obj_t * tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 35);
@@ -431,7 +432,7 @@ void create_second_screen_tab1(lv_obj_t * parent) {
     lv_scr_load(screen2); // Cargar la nueva pantalla
 
     // Definir los textos de las etiquetas y sus posiciones Y en un array
-    const char *textos[] = {
+    const char * textos[] = {
             "#8035A8 ¡HOLA!# " "#8035A8 \xEE\xAD\x94#",
             "Soy una herramienta para que puedas registrar de manera interactiva tus lecturas a través de mi cámara",
             "---------------------------------------",
@@ -489,7 +490,7 @@ void go_to_screen2_tab1(lv_event_t * e) {
 // Generación de estructura para hacer más fácil el manejo de los libros para ordenarlos
 struct Book {
     String title;
-    String key;
+    String book_key;
     long long timestamp;
 };
 
@@ -526,25 +527,25 @@ void tab2_content(lv_obj_t * parent) {
 
         // Recorrer los datos obtenidos y crear un objeto Book para cada libro
         for(JsonPair kv : doc.as<JsonObject>()) {
-            String key = kv.key().c_str();
-            String title = kv.value()["titulo"].as<String>();
-            long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
+            book_key = kv.key().c_str();
+            title = kv.value()["titulo"].as<String>();
+            timestamp = kv.value()["ultima_modificacion"].as<long long>();
 
-            Book book = {title, key, timestamp};
+            Book book = {title, book_key, timestamp};
             books.push_back(book); // va añadiendo los libros al vector
         }
 
         // Ordenar los libros por timestamp en orden descendente
-        std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
+        std::sort(books.begin(), books.end(), [](const Book & a, const Book & b) {
             return a.timestamp > b.timestamp;
         });
 
         // Mostrar los libros en la lista
-        for (const Book& book : books) {
+        for (const Book & book : books) {
             char * titleCopy = new char[book.title.length() + 1]; // Reservar espacio para una copia del título del libro, incluyendo espacio para el carácter nulo de terminación
             strcpy(titleCopy, book.title.c_str()); // Copiar el título del libro a la nueva memoria reservada
-            char * keyCopy = new char[book.key.length() + 1]; // Reservar espacio para una copia de la clave del libro, incluyendo espacio para el carácter nulo de terminación
-            strcpy(keyCopy, book.key.c_str()); // Copiar la clave del libro a la nueva memoria reservada
+            char * keyCopy = new char[book.book_key.length() + 1]; // Reservar espacio para una copia de la clave del libro, incluyendo espacio para el carácter nulo de terminación
+            strcpy(keyCopy, book.book_key.c_str()); // Copiar la clave del libro a la nueva memoria reservada
             lv_obj_t * btn = lv_list_add_btn(list, "\xF3\xB1\x81\xAF", titleCopy); // Crear un botón en la lista con el título del libro
 
             // Configurar el estilo del botón
@@ -583,7 +584,7 @@ void go_to_screen2_tab2(lv_event_t * e) {
 
 
 // Crear la pantalla secundaria de la pestaña 2 con los detalles del libro seleccionado
-void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
+void create_second_screen_tab2(lv_obj_t * parent, const std::string & key) {
     // Crear una nueva pantalla y cargarla
     lv_obj_t * screen2 = lv_obj_create(NULL);
     lv_obj_set_size(screen2, LV_HOR_RES, LV_VER_RES);
@@ -610,16 +611,16 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
     // Obtener los datos del libro seleccionado de la base de datos
     DynamicJsonDocument doc = get_book_data(key);
     if (!doc.isNull()) {
-        String titulo = doc["titulo"].as<String>();
-        String autor = doc["autor"].as<String>();
-        int paginas_total = doc["paginas_total"].as<int>();
-        int pagina_actual = doc["pagina_actual"].as<int>();
+        title = doc["titulo"].as<String>();
+        author = doc["autor"].as<String>();
+        totalPages = doc["paginas_total"].as<int>();
+        currentPage = doc["pagina_actual"].as<int>();
 
         // Crear las etiquetas y mostrar los datos del libro
         lv_obj_t * label_title = lv_label_create(screen2);
         lv_label_set_long_mode(label_title, LV_LABEL_LONG_SCROLL_CIRCULAR);
         lv_obj_set_width(label_title, 225);
-        lv_label_set_text(label_title, titulo.c_str());
+        lv_label_set_text(label_title, title.c_str());
         lv_obj_set_style_text_font(label_title, &bigger_symbols, 0);
         lv_obj_set_style_text_align(label_title, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(label_title, LV_ALIGN_CENTER, 0, posY += 30);
@@ -627,7 +628,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
         lv_obj_t * label_author = lv_label_create(screen2);
         lv_label_set_long_mode(label_author, LV_LABEL_LONG_WRAP);
         lv_obj_set_width(label_author, 225);
-        lv_label_set_text(label_author, ("Autor: " + autor).c_str());
+        lv_label_set_text(label_author, ("Autor: " + author).c_str());
         lv_obj_set_style_text_font(label_author, &ubuntu_regular_16, 0);
         lv_obj_set_style_text_align(label_author, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(label_author, LV_ALIGN_CENTER, 0, posY += 40);
@@ -635,7 +636,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
         lv_obj_t * label_total_pages = lv_label_create(screen2);
         lv_label_set_long_mode(label_total_pages, LV_LABEL_LONG_WRAP);
         lv_obj_set_width(label_total_pages, 225);
-        lv_label_set_text(label_total_pages, (String(paginas_total) + " páginas en total").c_str());
+        lv_label_set_text(label_total_pages, (String(totalPages) + " páginas en total").c_str());
         lv_obj_set_style_text_font(label_total_pages, &ubuntu_italic_16, 0);
         lv_obj_set_style_text_align(label_total_pages, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(label_total_pages, LV_ALIGN_CENTER, 0, posY += 25);
@@ -643,7 +644,7 @@ void create_second_screen_tab2(lv_obj_t * parent, const std::string& key) {
         lv_obj_t * label_current_page = lv_label_create(screen2);
         lv_label_set_long_mode(label_current_page, LV_LABEL_LONG_WRAP);
         lv_obj_set_width(label_current_page, 225);
-        lv_label_set_text(label_current_page, ("Vas por la página: " + String(pagina_actual)).c_str());;
+        lv_label_set_text(label_current_page, ("Vas por la página: " + String(currentPage)).c_str());;
         lv_obj_set_style_text_font(label_current_page, &ubuntu_bold_16, 0);
         lv_obj_set_style_text_align(label_current_page, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_align(label_current_page, LV_ALIGN_CENTER, 0, posY += 25);
@@ -755,7 +756,7 @@ void create_second_screen_tab3(lv_obj_t * parent) {
 
 
 // Crear la tarea de escaneo de QR
-void create_qr_task(void) {
+void create_qr_task() {
     if (qr_task_flag == 0) {
         qr_task_flag = 1;
         xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, &qrCodeTaskHandle);
@@ -766,7 +767,7 @@ void create_qr_task(void) {
 
 
 // Detener la tarea de escaneo de QR (espera hasta que la tarea se elimine)
-void stop_qr_task(void) {
+void stop_qr_task() {
     if (qr_task_flag == 1) {
         qr_task_flag = 0;
 
@@ -817,12 +818,12 @@ void onQrCodeTask(void *pvParameters) {
             }
         }
     }
-        vTaskDelete(qrCodeTaskHandle); // Elimina la tarea
+    vTaskDelete(qrCodeTaskHandle); // Elimina la tarea
 }
 
 
 // Buscar en la base de datos si existe el ISBN decodificado del código QR
-void searchIsbnInDatabase(const String& qrCodeContentGlobal) {
+void searchIsbnInDatabase(const String & qrCodeContentGlobal) {
     // Guardar el contenido del código QR en una variable
     String qrIsbn = qrCodeContentGlobal;
 
@@ -830,7 +831,7 @@ void searchIsbnInDatabase(const String& qrCodeContentGlobal) {
     book_found = false;
 
     // Crear un documento JSON dinámico para almacenar los datos de los libros
-    DynamicJsonDocument doc = get_book_data("");
+    DynamicJsonDocument doc = get_book_data();
 
     // Recorrer todos los libros en la base de datos y comparar el ISBN de cada libro con el ISBN decodificado
     for(JsonPair kv : doc.as<JsonObject>()) {
@@ -988,9 +989,8 @@ void keyboard_event_cb(lv_event_t * e) {
 
         // Verificar si el número introducido es mayor que el número máximo de páginas
         if(number > max_value) {
-            char max_value_str[32];
-            sprintf(max_value_str, "%d", max_value); // Convertir el número máximo a una cadena de caracteres
-            lv_textarea_set_text(ta, max_value_str);
+            std::string max_value_str = std::to_string(max_value); // Convertir el número máximo a una cadena de caracteres
+            lv_textarea_set_text(ta, max_value_str.c_str());
             return;
         }
 
@@ -1001,9 +1001,8 @@ void keyboard_event_cb(lv_event_t * e) {
         update_current_page(book_key.c_str(), currentPage);
 
         // Actualizar la etiqueta con el nuevo valor de la página actual
-        char buffer[32];
-        sprintf(buffer, "Página actual: %d", number);
-        lv_label_set_text(label, buffer);
+        std::string buffer = "Página actual: " + std::to_string(number);
+        lv_label_set_text(label, buffer.c_str());
 
         // Limpiar la pantalla
         lv_obj_del(kb);
@@ -1087,20 +1086,20 @@ void tab4_content(lv_obj_t * parent) {
 
     // Recorrer los datos obtenidos y crear un objeto Book para cada libro
     for(JsonPair kv : doc.as<JsonObject>()) {
-        int current_pages = kv.value()["pagina_actual"].as<int>();
-        int total_pages_book = kv.value()["paginas_total"].as<int>();
-        String title = kv.value()["titulo"].as<String>();
-        String key = kv.key().c_str();
-        long long timestamp = kv.value()["ultima_modificacion"].as<long long>();
+        currentPage = kv.value()["pagina_actual"].as<int>();
+        totalPages = kv.value()["paginas_total"].as<int>();
+        title = kv.value()["titulo"].as<String>();
+        book_key = kv.key().c_str();
+        timestamp = kv.value()["ultima_modificacion"].as<long long>();
 
-        Book book = {title, key, timestamp}; // Crear un objeto Book con los datos del libro
+        Book book = {title, book_key, timestamp}; // Crear un objeto Book con los datos del libro
         books.push_back(book); // Añadir el libro al vector
 
-        total_pages += current_pages; // Suma las páginas actuales al total
+        total_pages += currentPage; // Suma las páginas actuales al total
 
         // Actualizar el libro con más páginas leídas
-        if(current_pages > max_pages) {
-            max_pages = current_pages;
+        if(currentPage > max_pages) {
+            max_pages = currentPage;
             max_pages_book_title = title;
         }
 
@@ -1109,16 +1108,16 @@ void tab4_content(lv_obj_t * parent) {
         String status_label_text = title;
 
         // Comprobar estado de cada libro
-        if(current_pages == total_pages_book) {
+        if(currentPage == totalPages) {
             status_label = lv_label_create(container_finished);
             lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_finished + 1));
             count_finished++;
-        } else if(current_pages == 0) {
+        } else if(currentPage == 0) {
             status_label = lv_label_create(container_unstarted);
             lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_unstarted + 1));
             count_unstarted++;
         } else {
-            float percentage_read = float(current_pages) * 100 / total_pages_book;
+            float percentage_read = float(currentPage) * 100 / totalPages;
             status_label_text += " (" + String(percentage_read) + "% leído)";
             status_label = lv_label_create(container_in_progress);
             lv_obj_align(status_label, LV_ALIGN_TOP_LEFT, 0, 25 * (count_in_progress + 1));
@@ -1131,13 +1130,14 @@ void tab4_content(lv_obj_t * parent) {
     }
 
     // Ordenar los libros por timestamp en orden descendente
-    std::sort(books.begin(), books.end(), [](const Book& a, const Book& b) {
+    std::sort(books.begin(), books.end(), [](const Book & a, const Book & b) {
         return a.timestamp > b.timestamp;
     });
 
     // El libro más reciente es el primero en el vector
     String most_recent_book_title = books[0].title;
 
+    // Crear una etiqueta para mostrar el libro más reciente
     lv_obj_t * label1 = lv_label_create(parent);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label1, "Libro actual");
@@ -1148,14 +1148,13 @@ void tab4_content(lv_obj_t * parent) {
 
     lv_obj_t * label11 = lv_label_create(parent);
     lv_label_set_long_mode(label11, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    String label1_text = most_recent_book_title;
-    lv_label_set_text(label11, label1_text.c_str());
+    lv_label_set_text(label11, most_recent_book_title.c_str());
     lv_obj_set_style_text_font(label11, &ubuntu_regular_16, 0);
     lv_obj_set_width(label11, 230);
     lv_obj_set_style_text_align(label11, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label11, LV_ALIGN_CENTER, 0, -45);
 
-    // Create a label to display the book with the most pages read
+    // Crear una etiqueta para mostrar el libro con más páginas leídas
     lv_obj_t * label2 = lv_label_create(parent);
     lv_label_set_long_mode(label2, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label2, "Libro con más páginas leídas");
@@ -1173,7 +1172,7 @@ void tab4_content(lv_obj_t * parent) {
     lv_obj_set_style_text_align(label22, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label22, LV_ALIGN_CENTER, 0, 8);
 
-    // Create a label to display the total pages read
+    // Crear una etiqueta para mostrar el total de páginas leídas
     lv_obj_t * label3 = lv_label_create(parent);
     lv_label_set_long_mode(label3, LV_LABEL_LONG_WRAP);
     lv_label_set_text(label3, "Total de páginas leídas (entre todos los libros)");
@@ -1394,14 +1393,14 @@ void create_second_screen_tab4(lv_obj_t * parent) {
 
     // Para cada libro, calcular el porcentaje de páginas leídas y añadir una serie al gráfico
     for(JsonPair kv : doc.as<JsonObject>()) {
-        String book_key = kv.key().c_str(); // Obtener la clave del libro
+        book_key = kv.key().c_str(); // Obtener la clave del libro
         book_keys.push_back(book_key.c_str()); // Almacenar la clave del libro para su uso posterior
         JsonObject libro = kv.value().as<JsonObject>(); // Obtener el valor del libro como un objeto JSON
 
         // Calcular el porcentaje de páginas leídas
-        int paginas_total = libro["paginas_total"].as<int>();
-        int pagina_actual = libro["pagina_actual"].as<int>();
-        float porcentaje = ((float)pagina_actual / paginas_total) * 100;
+        totalPages = libro["paginas_total"].as<int>();
+        currentPage = libro["pagina_actual"].as<int>();
+        float porcentaje = ((float)currentPage / totalPages) * 100;
 
         // Añadir el porcentaje a la serie del gráfico
         lv_chart_set_next_value(chart, ser, porcentaje);
@@ -1451,8 +1450,8 @@ void go_to_screen2_tab4(lv_event_t * e) {
 void event_handler_bottom(lv_event_t * e) {
     const lv_event_code_t code = lv_event_get_code(e);
     if(code == LV_EVENT_CLICKED) {
-        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
-        lv_obj_scroll_to_y(screen2, lv_obj_get_height(screen2), LV_ANIM_ON); // Scroll to the bottom of the screen
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Obtener el objeto de la pantalla de los datos del evento
+        lv_obj_scroll_to_y(screen2, lv_obj_get_height(screen2), LV_ANIM_ON); // Desplazar la pantalla hacia abajo
     }
 }
 
@@ -1461,8 +1460,8 @@ void event_handler_bottom(lv_event_t * e) {
 void event_handler_top(lv_event_t * e) {
     const lv_event_code_t code = lv_event_get_code(e);
     if(code == LV_EVENT_CLICKED) {
-        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Get the screen object from the user data
-        lv_obj_scroll_to_y(screen2, 0, LV_ANIM_ON); // Scroll to the top of the screen
+        lv_obj_t * screen2 = (lv_obj_t *)lv_event_get_user_data(e); // Obtener el objeto de la pantalla de los datos del evento
+        lv_obj_scroll_to_y(screen2, 0, LV_ANIM_ON); // Desplazar la pantalla hacia arriba
     }
 }
 
