@@ -220,8 +220,15 @@ void tabview_event_handler(lv_event_t * e) {
     // Obtener la pestaña activa (seleccionada)
     uint16_t tab = lv_tabview_get_tab_act(tabview);
 
+    // Si la pestaña 1 está seleccionada (los índices de las pestañas comienzan en 0)
+    if (tab == 0) {
+        // Limpiar el contenido para volver a cargarlo actualizado
+        lv_obj_clean(tab1);
+        tab1_content(tab1);
+        //Serial.println("Tab 1");
+    }
     // Si la pestaña 2 está seleccionada (los índices de las pestañas comienzan en 0)
-    if (tab == 1) {
+    else if (tab == 1) {
         // Limpiar el contenido para volver a cargarlo actualizado
         lv_obj_clean(tab2);
         tab2_content(tab2);
@@ -403,26 +410,66 @@ void create_button(lv_obj_t * parent, lv_obj_t * label, button_style style, lv_e
 
 
 //--------------------------------------PESTAÑA 1---------------------------------------------------
-// Pantalla principal de la pestaña 1 (es estática)
+// Pantalla principal de la pestaña 1 (es dinámica y está sincronizada con la base de datos
 void tab1_content(lv_obj_t * parent) {
     // Título
     general_title(parent, "¡BIENVENIDO!", TITLE_STYLE_PURPLE);
+
+    // Obtener los datos de los libros de la base de datos
+    DynamicJsonDocument doc = get_book_data();
+
+    // Variable para almacenar el total de páginas leídas
+    int total_pages = 0;
+
+    // Recorrer los datos obtenidos y sumar las páginas leídas
+    for(JsonPair kv : doc.as<JsonObject>()) {
+        currentPage = kv.value()["pagina_actual"].as<int>();
+        total_pages += currentPage; // Suma las páginas actuales al total
+    }
+
+    // Crear una etiqueta para mostrar el nivel de lector
+    lv_obj_t * label = lv_label_create(parent);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    lv_label_set_recolor(label, true);
+    lv_obj_set_style_text_font(label, &ubuntu_bold_16, 0);
+    lv_obj_set_width(label, 220);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, -65);
+
+    // Determinar el nivel de lector en función del total de páginas leídas
+    String reader_level;
+    if (total_pages < 200) {
+        reader_level = "#8000C4 LECTOR NIVEL 0#";
+    } else if (total_pages < 400) {
+        reader_level = "#8000C4 LECTOR NIVEL 1#";
+    } else if (total_pages < 600) {
+        reader_level = "#8000C4 LECTOR NIVEL 2#";
+    } else if (total_pages < 800) {
+        reader_level = "#8000C4 LECTOR NIVEL 3#";
+    } else if (total_pages < 1500) {
+        reader_level = "#8000C4 LECTOR NIVEL 4#";
+    } else {
+        reader_level = "#8000C4 LECTOR NIVEL MÁXIMO#";
+    }
+
+    // Configurar la etiqueta con el nivel de lector
+    lv_label_set_text(label, reader_level.c_str());
 
     // Texto de bienvenida
     lv_obj_t * label1 = lv_label_create(parent);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // si el texto es muy largo se pasa a la línea siguiente
     lv_label_set_text(label1, "Yo seré tu asistente de lectura :)\n\n¿Quieres saber cómo funciono?");
     lv_obj_set_style_text_font(label1, &ubuntu_regular_16, 0);
-    lv_obj_set_width(label1, 160);
+    lv_obj_set_width(label1, 200);
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label1, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, 10);
 
     // Botón con símbolo para ir a la pantalla secundaria de la pestaña 1
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\xB3\xBD");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 180);
+    create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 200);
 }
 
 // Nueva pantalla con información adicional sobre el funcionamiento de la interfaz de usuario
@@ -436,6 +483,13 @@ void create_second_screen_tab1(lv_obj_t * parent) {
     const char * textos[] = {
             "#8035A8 ¡HOLA!# " "#8035A8 \xEE\xAD\x94#",
             "Soy una herramienta para que puedas registrar de manera interactiva tus lecturas a través de mi cámara",
+            "Además, te ayudaré a seguir tu progreso con niveles de lector:",
+            "#5E0091 Lector nivel 0:# menos de 200 páginas leídas",
+            "#5E0091 Lector nivel 1:# entre 200 y 400 páginas leídas",
+            "#5E0091 Lector nivel 2:# entre 400 y 600 páginas leídas",
+            "#5E0091 Lector nivel 3:# entre 600 y 800 páginas leídas",
+            "#5E0091 Lector nivel 4:# entre 800 y 1500 páginas leídas",
+            "#5E0091 Lector nivel máximo:# más de 1500 páginas leídas",
             "---------------------------------------",
             "\xF3\xB1\x89\x9F",
             "Aquí podrás almacenar los libros que estés leyendo",
@@ -444,7 +498,7 @@ void create_second_screen_tab1(lv_obj_t * parent) {
             "\xF3\xB0\x84\xA8",
             "Aquí podrás comprobar tu avance con la lectura"
     };
-    const int posicionesY[] = {20, 60, 150, 180, 210, 275, 305, 410, 440};
+    const int posicionesY[] = {20, 60, 160, 230, 275, 320, 365, 410, 455, 500, 525, 555, 620, 650, 755, 785};
 
     // Crear y configurar las etiquetas en un bucle
     for(int i = 0; i < sizeof(textos) / sizeof(textos[0]); i++) {
@@ -458,7 +512,7 @@ void create_second_screen_tab1(lv_obj_t * parent) {
         lv_obj_align(label, LV_ALIGN_TOP_MID, 0, posicionesY[i]);
 
         // Aplicar la fuente más grande a las etiquetas con símbolos
-        if(i == 0 || i == 3 || i == 5 || i == 7) {
+        if(i == 0 || i == 10 || i == 12 || i == 14) {
             lv_obj_set_style_text_font(label, &bigger_symbols, 0);
         }
     }
@@ -468,11 +522,11 @@ void create_second_screen_tab1(lv_obj_t * parent) {
     lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 510);
+    create_button(screen2, symbol, BUTTON_STYLE_PURPLE, back_to_main_menu, 95, 850);
 
     lv_obj_t * space = lv_label_create(screen2);
     lv_label_set_text(space, "\n\n");
-    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 510);
+    lv_obj_align(space, LV_ALIGN_TOP_MID, 0, 610);
 }
 
 // Manejador de eventos para el botón que cambia a la pantalla secundaria de tab1
