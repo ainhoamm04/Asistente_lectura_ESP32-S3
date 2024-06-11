@@ -929,6 +929,15 @@ void create_keyboard_screen(lv_obj_t * parent) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
     lv_scr_load(screen2);
 
+
+
+    // Verificar si la tarea ya existe antes de intentar crearla
+    if (qrCodeTaskHandle != NULL) {
+        reader.end();
+        //qr_task_flag = 0;
+        //qrCodeTaskHandle = NULL;
+    }
+
     if(book_found) {
         // Crear etiquetas con los datos del libro
         lv_obj_t * label1 = lv_label_create(screen2);
