@@ -12,11 +12,11 @@
 #define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"
 #define USER_EMAIL "amm00384@red.ujaen.es"
 #define USER_PASSWORD "frbs_4"
-#define WIFI_SSID "vodafoneAAP8ZC"
-#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
+//#define WIFI_SSID "vodafoneAAP8ZC"
+//#define WIFI_PASSWORD "mfqaX6ZXHzqzyYxe"
 
-//#define WIFI_SSID "Xiaomi_Ainhoa"
-//#define WIFI_PASSWORD "cobw4192"
+#define WIFI_SSID "Xiaomi_Ainhoa"
+#define WIFI_PASSWORD "cobw4192"
 
 //#define WIFI_SSID "telema2"
 //#define WIFI_PASSWORD "teleco2015"
@@ -97,9 +97,9 @@ DynamicJsonDocument get_book_data(const std::string & key) {
             DynamicJsonDocument doc(1024); // Crear un documento JSON para almacenar los datos
             deserializeJson(doc, jsonString); // Deserializar el JSON en el documento para poder acceder a los datos
 
-            size_t requiredSize = measureJson(doc); // Calcular el tamaño requerido para el JSON
-            Serial.print("Tamaño requerido para el JSON: ");
-            Serial.println(requiredSize);
+            //size_t requiredSize = measureJson(doc); // Calcular el tamaño requerido para el JSON
+            //Serial.print("Tamaño requerido para el JSON: ");
+            //Serial.println(requiredSize);
 
             return doc;
         }

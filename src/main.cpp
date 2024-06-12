@@ -761,19 +761,19 @@ void create_second_screen_tab3(lv_obj_t * parent) {
     lv_scr_load(screen2);
 
     // Activar el lector de códigos QR
-    reader.begin();
-    Serial.println("Begin ESP32QRCodeReader");
+    //reader.begin();
+    //Serial.println("Begin ESP32QRCodeReader");
 
     // Verificar si la tarea ya existe antes de intentar crearla
     if (qrCodeTaskHandle == NULL) {
         // Inicia la tarea de escaneo de códigos QR
         Serial.println("Iniciando tarea de escaneo de QR");
         create_qr_task();
-    } else {
+    }/* else {
         Serial.println("La tarea de escaneo de QR ya estaba en ejecucion");
         stop_qr_task();
         create_qr_task();
-    }
+    }*/
 
     // Crear etiquetas con texto y estilos
     lv_obj_t * label1 = lv_label_create(screen2);
@@ -839,11 +839,15 @@ void stop_qr_task() {
 
 // Escanear el código QR, decodificarlo y almacenar el contenido en una variable global
 void onQrCodeTask(void *pvParameters) {
+    reader.begin();
     Serial.println("Iniciando escaneo de QR");
+    Serial.printf("Entrando onQrCodeTask con qr_task_flag = %d\n", qr_task_flag);
 
     struct QRCodeData qrCodeData;
 
+    // La variable global se limpia bien, pero la librería tiene algo que falla internamente porque a veces vuelve a mostrar el último QR sin mostrárselo a la cámara
     qrCodeContentGlobal = ""; // Limpia de la variable global
+    Serial.println("Contenido de la variable global: " + qrCodeContentGlobal);
 
     //strip.setLedColorData(0, 255, 255, 255); // Color blanco
     //strip.show(); // Actualiza los LEDs
@@ -863,7 +867,9 @@ void onQrCodeTask(void *pvParameters) {
                 Serial.println("Contenido decodificado " + qrCodeContentGlobal);
 
                 qrCodeFound = true;  // Para entrar en el condicional del loop y poder buscar en la base de datos y mostrar la siguiente pantalla
-                qr_task_flag = 1; // Para detener la tarea
+                qr_task_flag = 0; // Para detener la tarea y luego poder volver a entrar a create_qr_task
+
+                break; // Si le quito esto, de vez en cuando se vuelve a leer el libro anterior escaneado
 
                 //strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
                 //strip.show(); // Actualiza los LEDs
@@ -873,7 +879,11 @@ void onQrCodeTask(void *pvParameters) {
             }
         }
     }
-    vTaskDelete(qrCodeTaskHandle); // Elimina la tarea
+    Serial.println("Saliendo de onQrCodeTask");
+    reader.end();
+    TaskHandle_t tmp = qrCodeTaskHandle;
+    qrCodeTaskHandle = NULL;
+    vTaskDelete(tmp); // Elimina la tarea
 }
 
 
@@ -932,11 +942,11 @@ void create_keyboard_screen(lv_obj_t * parent) {
 
 
     // Verificar si la tarea ya existe antes de intentar crearla
-    if (qrCodeTaskHandle != NULL) {
+    /*if (qrCodeTaskHandle != NULL) {
         reader.end();
         //qr_task_flag = 0;
         //qrCodeTaskHandle = NULL;
-    }
+    }*/
 
     if(book_found) {
         // Crear etiquetas con los datos del libro
