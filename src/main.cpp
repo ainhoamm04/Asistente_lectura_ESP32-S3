@@ -845,7 +845,7 @@ void onQrCodeTask(void *pvParameters) {
 
     struct QRCodeData qrCodeData;
 
-    // La variable global se limpia bien, pero la librería tiene algo que falla internamente porque a veces vuelve a mostrar el último QR sin mostrárselo a la cámara
+    // La variable global se limpia bien
     qrCodeContentGlobal = ""; // Limpia de la variable global
     Serial.println("Contenido de la variable global: " + qrCodeContentGlobal);
 
@@ -869,7 +869,7 @@ void onQrCodeTask(void *pvParameters) {
                 qrCodeFound = true;  // Para entrar en el condicional del loop y poder buscar en la base de datos y mostrar la siguiente pantalla
                 qr_task_flag = 0; // Para detener la tarea y luego poder volver a entrar a create_qr_task
 
-                break; // Si le quito esto, de vez en cuando se vuelve a leer el libro anterior escaneado
+                break;
 
                 //strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
                 //strip.show(); // Actualiza los LEDs
