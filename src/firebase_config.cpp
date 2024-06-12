@@ -1,12 +1,9 @@
 #include "firebase_config.h"
 #include <WiFi.h>
 #include <ArduinoJson.h>
-#include <lvgl.h>
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
-// Provide the RTDB payload printing info and other helper functions.
-#include <addons/RTDBHelper.h>
 
 #define DATABASE_URL "https://asistente-lectura-esp32-s3-default-rtdb.europe-west1.firebasedatabase.app/"
 #define API_KEY "AIzaSyDyI6HV9yF2pW5C4Ilrmu9VVGicfL9JrtE"

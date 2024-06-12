@@ -4,7 +4,6 @@
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 #include "lv_img.h"
 #include "firebase_config.h"
-#include <Firebase_ESP_Client.h>
 #include <ArduinoJson.h>
 #include <vector>
 
