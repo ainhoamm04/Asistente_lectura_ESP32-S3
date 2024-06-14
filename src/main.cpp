@@ -166,7 +166,8 @@ void tab_function()
     // Agregar 4 pestañas al objeto de vista de pestañas
     tab1 = lv_tabview_add_tab(tabview, "\xF3\xB0\x8B\x9C");
     tab2 = lv_tabview_add_tab(tabview, "\xF3\xB1\x89\x9F");
-    tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
+    tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x90\xB3");
+    //tab3 = lv_tabview_add_tab(tabview, "\xF3\xB0\x81\xB2");
     tab4 = lv_tabview_add_tab(tabview, "\xF3\xB0\x84\xA8");
 
     // Obtener los botones de pestañas para aplicarles estilo de fuente
@@ -492,7 +493,7 @@ void create_second_screen_tab1(lv_obj_t * parent) {
             "---------------------------------------",
             "\xF3\xB1\x89\x9F",
             "Aquí podrás almacenar los libros que estés leyendo",
-            "\xF3\xB0\x81\xB2",
+            "\xF3\xB0\x90\xB3",
             "Aquí podrás registrar tus nuevos libros. Para ello deberás mostrar a la cámara el QR asignado a cada libro",
             "\xF3\xB0\x84\xA8",
             "Aquí podrás comprobar tu avance con la lectura"
@@ -939,14 +940,6 @@ void create_keyboard_screen(lv_obj_t * parent) {
     lv_scr_load(screen2);
 
 
-
-    // Verificar si la tarea ya existe antes de intentar crearla
-    /*if (qrCodeTaskHandle != NULL) {
-        reader.end();
-        //qr_task_flag = 0;
-        //qrCodeTaskHandle = NULL;
-    }*/
-
     if(book_found) {
         // Crear etiquetas con los datos del libro
         lv_obj_t * label1 = lv_label_create(screen2);
@@ -1073,20 +1066,49 @@ void keyboard_event_cb(lv_event_t * e) {
         // Actualizar el valor de currentPage en la base de datos
         update_current_page(book_key.c_str(), currentPage);
 
-        // Actualizar la etiqueta con el nuevo valor de la página actual
-        std::string buffer = "Página actual: " + std::to_string(number);
-        lv_label_set_text(label, buffer.c_str());
-
         // Limpiar la pantalla
         lv_obj_del(kb);
         lv_obj_del(ta);
 
-        // Crear botón para regresar a la pantalla principal de la pestaña 3
-        lv_obj_t * symbol = lv_label_create(lv_scr_act());
-        lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
-        lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+        // Actualizar la etiqueta con el nuevo valor de la página actual
+        std::string buffer = "Página actual: " + std::to_string(number);
+        lv_label_set_text(label, buffer.c_str());
 
-        create_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
+        // If the user has finished the book, display a congratulatory message
+        if(number == max_value) {
+            lv_obj_t * congrats_label = lv_label_create(lv_scr_act());
+            lv_label_set_long_mode(congrats_label, LV_LABEL_LONG_WRAP);
+            lv_label_set_recolor(congrats_label, true);
+            lv_obj_set_style_text_font(congrats_label, &bigger_symbols, 0);
+            lv_obj_set_width(congrats_label, 240);
+            lv_label_set_text(congrats_label, "#FF7800 \xF3\xB1\xA5\x8B ¡Enhorabuena! \xF3\xB1\xA5\x8B#");
+            lv_obj_set_style_text_align(congrats_label, LV_TEXT_ALIGN_CENTER, 0);
+            lv_obj_align(congrats_label, LV_ALIGN_CENTER, 0, 0);
+
+            lv_obj_t * congrats_label2 = lv_label_create(lv_scr_act());
+            lv_label_set_long_mode(congrats_label2, LV_LABEL_LONG_WRAP);
+            lv_label_set_recolor(congrats_label2, true);
+            lv_obj_set_style_text_font(congrats_label2, &ubuntu_regular_16, 0);
+            lv_obj_set_width(congrats_label2, 240);
+            lv_label_set_text(congrats_label2, "#FF7800 Vas por buen camino#");
+            lv_obj_set_style_text_align(congrats_label2, LV_TEXT_ALIGN_CENTER, 0);
+            lv_obj_align(congrats_label2, LV_ALIGN_CENTER, 0, 30);
+
+            // Crear botón para regresar a la pantalla principal de la pestaña 3
+            lv_obj_t * symbol = lv_label_create(lv_scr_act());
+            lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+            lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+            create_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 230);
+        } else {
+            // Crear botón para regresar a la pantalla principal de la pestaña 3
+            lv_obj_t * symbol = lv_label_create(lv_scr_act());
+            lv_label_set_text(symbol, "\xF3\xB0\xA9\x88");
+            lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
+
+            create_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
+        }
+
     }
 }
 
