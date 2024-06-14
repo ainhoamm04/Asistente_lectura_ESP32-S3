@@ -56,7 +56,7 @@ int totalPages;
 int currentPage;
 long long timestamp;
 
-//Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
+Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LEDS_PIN, CHANNEL, TYPE_GRB);
 
 lv_obj_t * scr_principal;
 
@@ -129,8 +129,8 @@ void setup() {
     Serial.println("Setup QRCode Reader");
 
     // Inicialización del LED
-    //strip.begin();
-    //strip.setBrightness(255);
+    strip.begin();
+    strip.setBrightness(255);
 }
 
 
@@ -250,6 +250,10 @@ void back_to_main_menu(lv_event_t * e) {
     lv_obj_t * current_screen = lv_obj_get_parent(lv_event_get_target(e)); // Obtener la pantalla actual (secundaria)
     lv_scr_load(scr_principal); // Cargar la pantalla principal (donde están las tabs)
     lv_obj_del(current_screen); // Eliminar la pantalla secundaria
+
+    // Apagar el LED si se sale de la segunda pantalla de tab3 mediante el botón
+    strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
+    strip.show(); // Actualiza los LEDs
 }
 
 
@@ -438,38 +442,63 @@ void tab1_content(lv_obj_t * parent) {
 
     // Determinar el nivel de lector en función del total de páginas leídas
     String reader_level;
+    int next_level = 0;
     if (total_pages < 200) {
-        reader_level = "#8000C4 LECTOR NIVEL 0#";
+        reader_level = "#8000C4 NIVEL APRENDIZ#";
+        next_level = 200 - total_pages;
     } else if (total_pages < 400) {
-        reader_level = "#8000C4 LECTOR NIVEL 1#";
+        reader_level = "#8000C4 NIVEL INICIADO#";
+        next_level = 400 - total_pages;
     } else if (total_pages < 600) {
-        reader_level = "#8000C4 LECTOR NIVEL 2#";
+        reader_level = "#8000C4 NIVEL AVANZADO#";
+        next_level = 600 - total_pages;
     } else if (total_pages < 800) {
-        reader_level = "#8000C4 LECTOR NIVEL 3#";
+        reader_level = "#8000C4 NIVEL EXPERTO#";
+        next_level = 800 - total_pages;
     } else if (total_pages < 1500) {
-        reader_level = "#8000C4 LECTOR NIVEL 4#";
+        reader_level = "#8000C4 NIVEL MAESTRO#";
+        next_level = 1500 - total_pages;
     } else {
-        reader_level = "#8000C4 LECTOR NIVEL MÁXIMO#";
+        reader_level = "#8000C4 \xF3\xB0\x93\x8E NIVEL SABIO \xF3\xB0\x93\x8E#";
+        next_level = 0;
     }
 
     // Configurar la etiqueta con el nivel de lector
     lv_label_set_text(label, reader_level.c_str());
 
+    // Crear una etiqueta para mostrar las páginas restantes para el próximo nivel
+    lv_obj_t * next_level_label = lv_label_create(parent);
+    lv_label_set_long_mode(next_level_label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_font(next_level_label, &ubuntu_italic_16, 0);
+    lv_obj_set_width(next_level_label, 220);
+    lv_obj_set_style_text_align(next_level_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(next_level_label, LV_ALIGN_CENTER, 0, -30);
+
+    // Configurar la etiqueta con las páginas restantes para el próximo nivel
+    String next_level_text;
+    if (total_pages >= 1500) {
+        next_level_text = "¡ENHORABUENA!\nHas llegado al máximo nivel";
+    } else {
+        next_level_text = String(next_level) + " páginas restantes para el siguiente nivel";
+    }
+    lv_label_set_text(next_level_label, next_level_text.c_str());
+
+
     // Texto de bienvenida
     lv_obj_t * label1 = lv_label_create(parent);
     lv_label_set_long_mode(label1, LV_LABEL_LONG_WRAP); // si el texto es muy largo se pasa a la línea siguiente
-    lv_label_set_text(label1, "Yo seré tu asistente de lectura :)\n\n¿Quieres saber cómo funciono?");
+    lv_label_set_text(label1, "Yo seré tu asistente de lectura\n¿Quieres saber cómo funciono?");
     lv_obj_set_style_text_font(label1, &ubuntu_regular_16, 0);
-    lv_obj_set_width(label1, 200);
+    lv_obj_set_width(label1, 220);
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(label1, LV_ALIGN_CENTER, 0, 10);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, 30);
 
     // Botón con símbolo para ir a la pantalla secundaria de la pestaña 1
     lv_obj_t * symbol = lv_label_create(parent);
     lv_label_set_text(symbol, "\xF3\xB0\xB3\xBD");
     lv_obj_set_style_text_font(symbol, &bigger_symbols, 0);
 
-    create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 200);
+    create_button(parent, symbol, BUTTON_STYLE_PURPLE, go_to_screen2_tab1, 75, 190);
 }
 
 // Nueva pantalla con información adicional sobre el funcionamiento de la interfaz de usuario
@@ -484,12 +513,12 @@ void create_second_screen_tab1(lv_obj_t * parent) {
             "#8035A8 ¡HOLA!# " "#8035A8 \xEE\xAD\x94#",
             "Soy una herramienta para que puedas registrar de manera interactiva tus lecturas a través de mi cámara",
             "Además, te ayudaré a seguir tu progreso con niveles de lector:",
-            "#5E0091 Lector nivel 0:# menos de 200 páginas leídas",
-            "#5E0091 Lector nivel 1:# entre 200 y 400 páginas leídas",
-            "#5E0091 Lector nivel 2:# entre 400 y 600 páginas leídas",
-            "#5E0091 Lector nivel 3:# entre 600 y 800 páginas leídas",
-            "#5E0091 Lector nivel 4:# entre 800 y 1500 páginas leídas",
-            "#5E0091 Lector nivel máximo:# más de 1500 páginas leídas",
+            "#5E0091 Lector aprendiz:# menos de 200 páginas leídas",
+            "#5E0091 Lector iniciado:# entre 200 y 400 páginas leídas",
+            "#5E0091 Lector avanzado:# entre 400 y 600 páginas leídas",
+            "#5E0091 Lector experto:# entre 600 y 800 páginas leídas",
+            "#5E0091 Lector maestro:# entre 800 y 1500 páginas leídas",
+            "#5E0091 Lector sabio:# más de 1500 páginas leídas",
             "---------------------------------------",
             "\xF3\xB1\x89\x9F",
             "Aquí podrás almacenar los libros que estés leyendo",
@@ -760,6 +789,9 @@ void create_second_screen_tab3(lv_obj_t * parent) {
     lv_obj_set_style_bg_color(screen2, lv_color_hex(0xFFCE7E), 0);
     lv_scr_load(screen2);
 
+    strip.setLedColorData(0, 255, 255, 255); // Color blanco
+    strip.show(); // Actualiza los LEDs
+
     // Activar el lector de códigos QR
     //reader.begin();
     //Serial.println("Begin ESP32QRCodeReader");
@@ -869,10 +901,10 @@ void onQrCodeTask(void *pvParameters) {
                 qrCodeFound = true;  // Para entrar en el condicional del loop y poder buscar en la base de datos y mostrar la siguiente pantalla
                 qr_task_flag = 0; // Para detener la tarea y luego poder volver a entrar a create_qr_task
 
-                break;
+                strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
+                strip.show(); // Actualiza los LEDs
 
-                //strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
-                //strip.show(); // Actualiza los LEDs
+                break;
             } else {
                 Serial.print("Invalid: ");
                 Serial.println((const char *)qrCodeData.payload);
