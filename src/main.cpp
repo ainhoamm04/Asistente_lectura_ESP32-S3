@@ -45,8 +45,8 @@ TaskHandle_t qrCodeTaskHandle;
 bool qr_task_flag = false;
 void onQrCodeTask(void *pvParameters);
 void create_qr_task();
-void stop_qr_task();
 bool qrCodeFound = false;
+QRCodeData qrCodeData = {false, 0, {0}, 0};
 
 bool book_found = false;
 String book_key;
@@ -789,20 +789,12 @@ void create_second_screen_tab3(lv_obj_t * parent) {
     strip.setLedColorData(0, 255, 255, 255); // Color blanco
     strip.show(); // Actualiza los LEDs
 
-    // Activar el lector de códigos QR
-    //reader.begin();
-    //Serial.println("Begin ESP32QRCodeReader");
-
     // Verificar si la tarea ya existe antes de intentar crearla
     if (qrCodeTaskHandle == NULL) {
         // Inicia la tarea de escaneo de códigos QR
         Serial.println("Iniciando tarea de escaneo de QR");
         create_qr_task();
-    }/* else {
-        Serial.println("La tarea de escaneo de QR ya estaba en ejecucion");
-        stop_qr_task();
-        create_qr_task();
-    }*/
+    }
 
     // Crear etiquetas con texto y estilos
     lv_obj_t * label1 = lv_label_create(screen2);
@@ -849,19 +841,8 @@ void back_to_main_menu_tab3(lv_event_t * e) {
     strip.setLedColorData(0, 0, 0, 0); // Apaga el LED
     strip.show(); // Actualiza los LEDs
 
-
+    // Detener la tarea de escaneo de QR
     qr_task_flag = false;
-    delay(200);
-
-    /*
-    Serial.println("Saliendo de onQrCodeTask");
-    reader.end();
-    TaskHandle_t tmp = qrCodeTaskHandle;
-    qrCodeTaskHandle = NULL;
-    vTaskDelete(tmp); // Elimina la tarea
-
-     */
-
 }
 
 
@@ -869,25 +850,9 @@ void back_to_main_menu_tab3(lv_event_t * e) {
 void create_qr_task() {
     if (!qr_task_flag) {
         qr_task_flag = true;
-        xTaskCreate(onQrCodeTask, "onQrCode", 80000, NULL, 1, &qrCodeTaskHandle);
+        xTaskCreate(onQrCodeTask, "onQrCode", 4*1024, NULL, 1, &qrCodeTaskHandle);
     } else {
         Serial.println("onQrCodeTask is running...");
-    }
-}
-
-
-// Detener la tarea de escaneo de QR (espera hasta que la tarea se elimine)
-void stop_qr_task() {
-    if (qr_task_flag) {
-        qr_task_flag = false;
-
-        while (1) {
-            if (eTaskGetState(qrCodeTaskHandle) == eDeleted) {
-                break;
-            }
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-        }
-        Serial.println("onQrCodeTask deleted!");
     }
 }
 
@@ -898,71 +863,23 @@ void onQrCodeTask(void *pvParameters) {
     Serial.println("Iniciando escaneo de QR");
     Serial.printf("Entrando onQrCodeTask con qr_task_flag = %d\n", qr_task_flag);
 
-    QRCodeData qrCodeData;
-
-
-    // Inicializar los miembros de qrCodeData
-    qrCodeData.valid = false;
-    qrCodeData.dataType = 0;
-    memset(qrCodeData.payload, 0, sizeof(qrCodeData.payload));
-    qrCodeData.payloadLen = 0;
-
-    /*
-    // Imprimir los valores de qrCodeData antes de entrar al bucle
-    Serial.println("Valores iniciales de qrCodeData1:");
-    Serial.print("Valid1: ");
-    Serial.println(qrCodeData.valid ? "true" : "false");
-    Serial.print("DataType1: ");
-    Serial.println(qrCodeData.dataType);
-    Serial.print("Payload1: ");
-    for(int i = 0; i < qrCodeData.payloadLen; i++) {
-        Serial.print(qrCodeData.payload[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-    Serial.print("PayloadLen1: ");
-    Serial.println(qrCodeData.payloadLen);*/
-
-
-
-
     // La variable global se limpia bien
     qrCodeContentGlobal = ""; // Limpia de la variable global
     Serial.println("Contenido de la variable global: " + qrCodeContentGlobal);
 
-    //strip.setLedColorData(0, 255, 255, 255); // Color blanco
-    //strip.show(); // Actualiza los LEDs
-
     int time = millis();
 
     while (qr_task_flag) {
-
+        // Para comprobar que está dentro del bucle
         Serial.println("-");
-        //delay(200);
 
         // Si se recibe un código QR, decodifica y almacena el contenido en la variable global
         if (reader.receiveQrCode(&qrCodeData, 100)) {
 
-            if((millis()-time) > 500){  // Hasta que no pasen 500ms se entiende que no es un qrcode valido
+            // Hasta que no pasen 500ms se entiende que no es un qrcode valido
+            if((millis()-time) > 500){
 
                 Serial.println("Found QRCode");
-
-                /*
-                // Imprimir los valores de qrCodeData antes de entrar al bucle
-                Serial.println("Valores iniciales de qrCodeData2:");
-                Serial.print("Valid2: ");
-                Serial.println(qrCodeData.valid ? "true" : "false");
-                Serial.print("DataType2: ");
-                Serial.println(qrCodeData.dataType);
-                Serial.print("Payload2: ");
-                for(int i = 0; i < qrCodeData.payloadLen; i++) {
-                    Serial.print(qrCodeData.payload[i], HEX);
-                    Serial.print(" ");
-                }
-                Serial.println();
-                Serial.print("PayloadLen2: ");
-                Serial.println(qrCodeData.payloadLen);*/
-
 
                 // Si el código QR es válido, lo guarda en la variable global y
                 if (qrCodeData.valid) {
@@ -972,26 +889,6 @@ void onQrCodeTask(void *pvParameters) {
                     // Guarda el contenido del código QR en la variable global
                     qrCodeContentGlobal = String((const char *) qrCodeData.payload);
                     Serial.println("Contenido decodificado " + qrCodeContentGlobal);
-
-
-
-                    /*
-                    // Imprimir los valores de qrCodeData antes de entrar al bucle
-                    Serial.println("Valores iniciales de qrCodeData3:");
-                    Serial.print("Valid3: ");
-                    Serial.println(qrCodeData.valid ? "true" : "false");
-                    Serial.print("DataType3: ");
-                    Serial.println(qrCodeData.dataType);
-                    Serial.print("Payload3: ");
-                    for(int i = 0; i < qrCodeData.payloadLen; i++) {
-                        Serial.print(qrCodeData.payload[i], HEX);
-                        Serial.print(" ");
-                    }
-                    Serial.println();
-                    Serial.print("PayloadLen3: ");
-                    Serial.println(qrCodeData.payloadLen);*/
-
-
 
                     qrCodeFound = true;  // Para entrar en el condicional del loop y poder buscar en la base de datos y mostrar la siguiente pantalla
                     qr_task_flag = false; // Para detener la tarea y luego poder volver a entrar a create_qr_task
@@ -1008,13 +905,11 @@ void onQrCodeTask(void *pvParameters) {
             }
         }
     }
-
     reader.end();
     Serial.println("Saliendo de onQrCodeTask");
     TaskHandle_t tmp = qrCodeTaskHandle;
     qrCodeTaskHandle = NULL;
     vTaskDelete(tmp); // Elimina la tarea
-
 }
 
 
@@ -1044,12 +939,6 @@ void searchIsbnInDatabase(const String & qrCodeContentGlobal) {
             totalPages = kv.value()["paginas_total"].as<int>();
             currentPage = kv.value()["pagina_actual"].as<int>();
 
-            /*
-            Serial.println("Libro encontrado:");
-            Serial.println("Titulo: " + title);
-            Serial.println("Autor: " + author);
-            Serial.println("Paginas totales: " + String(totalPages));
-            Serial.println("Pagina actual: " + String(currentPage));*/
             break; // Salir del bucle si se encuentra el libro
         }
     }
@@ -1239,7 +1128,6 @@ void keyboard_event_cb(lv_event_t * e) {
 
             create_button(lv_scr_act(), symbol, BUTTON_STYLE_ORANGE, back_to_main_menu, 95, 160);
         }
-
     }
 }
 
