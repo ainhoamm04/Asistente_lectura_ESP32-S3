@@ -219,7 +219,7 @@ void tabview_event_handler(lv_event_t * e) {
     lv_obj_t * tabview = lv_event_get_target(e);
 
     // Obtener la pestaña activa (seleccionada)
-    uint16_t tab = lv_tabview_get_tab_act(tabview);
+    int tab = lv_tabview_get_tab_act(tabview);
 
     // Si la pestaña 1 está seleccionada (los índices de las pestañas comienzan en 0)
     if (tab == 0) {
